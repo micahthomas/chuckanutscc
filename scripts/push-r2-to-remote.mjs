@@ -6,28 +6,49 @@
 
 import { spawn } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PROJECT_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const BUCKET = "cscc-media";
-const STATE_DIR = join(PROJECT_ROOT, ".wrangler", "state", "v3", "r2", BUCKET);
-const DB_PATH = join(STATE_DIR, "db.sqlite");
-const BLOBS_DIR = join(STATE_DIR, "blobs");
 
-if (!existsSync(DB_PATH)) {
-  console.error(`Local R2 state not found at ${DB_PATH}.`);
+// Miniflare stores R2 buckets under a hashed Durable-Object directory; the
+// per-bucket sqlite file's name isn't the bucket name. Find it by scanning
+// for the one that contains the _mf_objects table.
+const DO_DIR = join(PROJECT_ROOT, ".wrangler", "state", "v3", "r2", "miniflare-R2BucketObject");
+if (!existsSync(DO_DIR)) {
+  console.error(`Local R2 state not found at ${DO_DIR}.`);
   console.error("Run `pnpm db:seed:local` and the import scripts first.");
   process.exit(1);
 }
 
-const db = new DatabaseSync(DB_PATH, { readOnly: true });
-// Miniflare's R2 metadata layout: _mf_objects(key, blob_id, http_metadata, ...).
-const rows = db.prepare(
+const candidates = readdirSync(DO_DIR).filter((f) => f.endsWith(".sqlite") && f !== "metadata.sqlite");
+let metadataDb;
+let blobsDir;
+for (const file of candidates) {
+  const path = join(DO_DIR, file);
+  const tryDb = new DatabaseSync(path, { readOnly: true });
+  const table = tryDb.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name = '_mf_objects'",
+  ).get();
+  if (!table) { tryDb.close(); continue; }
+  // Found it. Blobs sit in `<bucket-name>/blobs/`, addressed by blob_id.
+  metadataDb = tryDb;
+  blobsDir = join(PROJECT_ROOT, ".wrangler", "state", "v3", "r2", BUCKET, "blobs");
+  break;
+}
+if (!metadataDb || !blobsDir) {
+  console.error("Couldn't find Miniflare R2 metadata sqlite. Has the local bucket been populated?");
+  process.exit(1);
+}
+
+const rows = metadataDb.prepare(
   "SELECT key, blob_id, http_metadata FROM _mf_objects ORDER BY key",
 ).all();
-db.close();
+metadataDb.close();
+
+const BLOBS_DIR = blobsDir;
 
 console.log(`Pushing ${rows.length} object(s) to remote ${BUCKET}…`);
 

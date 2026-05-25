@@ -140,15 +140,21 @@ const pageTitle = season ? `${season.year} Season` : "Events";
         <p class="text-sm text-slate-500 mb-6">Results live on Scorekeeper.</p>
         <ul class="divide-y divide-slate-100 bg-white border border-slate-200 rounded-lg overflow-hidden">
           {past.map((evt) => (
-            <li class="flex items-center gap-4 px-5 py-3 hover:bg-slate-50">
-              <a href={`/events/${evt.slug}`} class="flex-1 min-w-0">
-                <div class="font-medium text-slate-900 truncate">{evt.title}</div>
-                <div class="text-xs text-slate-500">{evt.location_name ?? ""}</div>
-              </a>
-              <div class="text-sm text-slate-500 whitespace-nowrap">{fmtDate(evt.start_at)} · {fmtTime(evt.start_at)}</div>
-              {evt.results_url && (
-                <a href={evt.results_url} target="_blank" rel="noopener" class="text-xs text-brand-700 hover:underline whitespace-nowrap shrink-0">Results →</a>
-              )}
+            <li class="px-5 py-3 hover:bg-slate-50">
+              <div class="sm:flex sm:items-center sm:gap-4">
+                <a href={`/events/${evt.slug}`} class="block sm:flex-1 sm:min-w-0">
+                  <div class="font-medium text-slate-900">{evt.title}</div>
+                  {evt.location_name && (
+                    <div class="text-xs text-slate-500 truncate">{evt.location_name}</div>
+                  )}
+                </a>
+                <div class="flex items-baseline gap-3 mt-1 sm:mt-0 text-sm text-slate-500 sm:shrink-0">
+                  <span class="whitespace-nowrap">{fmtDate(evt.start_at)} · {fmtTime(evt.start_at)}</span>
+                  {evt.results_url && (
+                    <a href={evt.results_url} target="_blank" rel="noopener" class="text-sm text-brand-700 hover:underline whitespace-nowrap py-1">Results →</a>
+                  )}
+                </div>
+              </div>
             </li>
           ))}
         </ul>
