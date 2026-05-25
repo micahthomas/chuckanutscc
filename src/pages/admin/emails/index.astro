@@ -1,0 +1,61 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { db } from "~/lib/db";
+import { fmtDateTime } from "~/lib/format";
+
+const { results } = await db(Astro)
+  .prepare(
+    `SELECT id, recipient_email, subject, template, related_id, resend_id, status, sent_at, error
+     FROM email_log
+     ORDER BY sent_at DESC
+     LIMIT 200`,
+  )
+  .all<{ id: string; recipient_email: string; subject: string; template: string;
+          related_id: string | null; resend_id: string | null; status: string;
+          sent_at: number; error: string | null }>();
+---
+
+<AdminLayout title="Email log">
+  <h1 class="text-2xl font-semibold mb-2">Email log</h1>
+  <p class="text-sm text-slate-500 mb-6">
+    Every email the site sent (or would have sent — offline mode logs but doesn't deliver).
+    Last 200 entries.
+  </p>
+
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    {results.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">Nothing logged yet.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">When</th>
+            <th class="px-4 py-2">To</th>
+            <th class="px-4 py-2">Template</th>
+            <th class="px-4 py-2">Subject</th>
+            <th class="px-4 py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {results.map((e) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 whitespace-nowrap">{fmtDateTime(e.sent_at)}</td>
+              <td class="px-4 py-2">{e.recipient_email}</td>
+              <td class="px-4 py-2 text-xs text-slate-500 font-mono">{e.template}</td>
+              <td class="px-4 py-2">{e.subject}</td>
+              <td class="px-4 py-2">
+                {e.status === "sent" && !e.resend_id ? (
+                  <span class="text-xs text-amber-700">offline-logged</span>
+                ) : e.status === "sent" ? (
+                  <span class="text-xs text-emerald-700">sent</span>
+                ) : (
+                  <span class="text-xs text-red-700" title={e.error ?? ""}>{e.status}</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

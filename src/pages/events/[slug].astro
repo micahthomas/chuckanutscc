@@ -1,0 +1,275 @@
+---
+import PublicLayout from "~/layouts/PublicLayout.astro";
+import {
+  loadEventBySlug,
+  loadEventPhotographers,
+  loadEventPhotos,
+  loadLocation,
+} from "~/lib/queries";
+import { fmtDate, fmtTime, fmtMoney } from "~/lib/format";
+import { renderMarkdown } from "~/lib/markdown";
+import { googleMapsDirectionsUrl } from "~/lib/maps";
+import SatelliteMap from "~/components/public/SatelliteMap.tsx";
+import PhotoMosaic, { type MosaicPhoto } from "~/components/public/PhotoMosaic.tsx";
+
+const slug = Astro.params.slug!;
+const evt = await loadEventBySlug(Astro, slug);
+
+if (!evt) {
+  return new Response("Not found", { status: 404 });
+}
+
+const [photographers, photos, venue] = await Promise.all([
+  loadEventPhotographers(Astro, evt.id),
+  loadEventPhotos(Astro, evt.id, { status: "live" }),
+  evt.location_id ? loadLocation(Astro, evt.location_id) : Promise.resolve(null),
+]);
+
+// Effective location: prefer the linked venue, fall back to free-text overrides.
+const locName = venue?.name ?? evt.location_name;
+const locAddress = venue?.address ?? null;
+const hasVenueCoords = !!venue && venue.latitude !== null && venue.longitude !== null;
+
+const runGroups: string[] | null = evt && (evt as unknown as { run_groups_json: string | null }).run_groups_json
+  ? JSON.parse((evt as unknown as { run_groups_json: string }).run_groups_json)
+  : null;
+
+const descHtml = renderMarkdown(evt.description_md);
+
+const photographerCount = photographers.length;
+const PHOTO_PREVIEW_LIMIT = 24;
+const remaining = Math.max(0, photos.length - PHOTO_PREVIEW_LIMIT);
+
+// Pass the full photos array so the lightbox can navigate all of them; the
+// `previewLimit` prop caps the rendered thumbnails to PHOTO_PREVIEW_LIMIT.
+const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
+  id: p.id,
+  thumb: p.r2_key_thumb,
+  display: p.r2_key_display,
+  full: p.r2_key_full,
+  photographer: p.photographer_name,
+  photographerSlug: p.photographer_slug,
+  eventTitle: evt.title,
+  eventSlug: evt.slug,
+  width: p.width,
+  height: p.height,
+}));
+---
+
+<PublicLayout title={evt.title} description={evt.description_md.slice(0, 160)}>
+  <header class="relative isolate overflow-hidden bg-brand-900 text-white">
+    {(evt.hero_image_key ?? evt.fallback_hero_key) && (
+      <img
+        src={`/media/${evt.hero_image_key ?? evt.fallback_hero_key}`}
+        alt=""
+        class="absolute inset-0 -z-10 h-full w-full object-cover opacity-40"
+      />
+    )}
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-brand-900/60 via-brand-900/75 to-brand-900"></div>
+
+    <div class="max-w-4xl mx-auto px-4 py-16 sm:py-20">
+      <a href="/events" class="text-sm text-brand-100/80 hover:text-white">← All events</a>
+      <div class="text-xs uppercase tracking-wider text-brand-100/80 mt-4 mb-2 font-semibold">{evt.event_type}</div>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3 drop-shadow">{evt.title}</h1>
+      <div class="flex flex-wrap gap-x-6 gap-y-1 text-brand-100">
+        <span>📅 {fmtDate(evt.start_at)}</span>
+        <span>⏰ {fmtTime(evt.start_at)}{evt.end_at ? ` – ${fmtTime(evt.end_at)}` : ""}</span>
+        {locName && (
+          venue ? (
+            <a href={`/locations/${venue.slug}`} class="hover:text-white underline-offset-2 hover:underline">
+              📍 {locName}
+            </a>
+          ) : (
+            <span>📍 {locName}</span>
+          )
+        )}
+      </div>
+
+      {evt.status === "cancelled" && (
+        <div class="mt-6 bg-red-500/20 border border-red-400/50 text-red-100 rounded p-3 text-sm">
+          This event has been cancelled.
+        </div>
+      )}
+      {evt.status === "postponed" && (
+        <div class="mt-6 bg-amber-500/20 border border-amber-400/50 text-amber-100 rounded p-3 text-sm">
+          This event has been postponed.
+        </div>
+      )}
+
+      {(evt.registration_url || evt.results_url) && (
+        <div class="flex gap-3 mt-8 flex-wrap">
+          {evt.registration_url && evt.status !== "completed" && (
+            <a
+              href={evt.registration_url}
+              target="_blank"
+              rel="noopener"
+              class="bg-white text-brand-900 px-5 py-2.5 rounded font-medium hover:bg-brand-50"
+            >
+              Register on Scorekeeper →
+            </a>
+          )}
+          {evt.results_url && (
+            <a
+              href={evt.results_url}
+              target="_blank"
+              rel="noopener"
+              class="border border-white/70 text-white px-5 py-2.5 rounded font-medium hover:bg-white/10"
+            >
+              See results →
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  </header>
+
+  <article class="max-w-4xl mx-auto px-4 py-12 grid gap-10 md:grid-cols-3">
+    <div class="md:col-span-2">
+      <div class="prose max-w-none" set:html={descHtml} />
+
+      {runGroups && runGroups.length > 0 && (
+        <div class="mt-8">
+          <h3 class="font-semibold mb-3 text-sm uppercase tracking-wide text-slate-500">Run groups</h3>
+          <div class="flex gap-2 flex-wrap">
+            {runGroups.map((g) => (
+              <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded text-sm">{g}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <aside class="md:col-span-1 space-y-6">
+      {(evt.fee_member_cents != null || evt.fee_nonmember_cents != null) && (
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm">
+          <h3 class="font-semibold mb-2 text-xs uppercase tracking-wide text-slate-500">Entry fee</h3>
+          {evt.fee_member_cents != null && (
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-600">Members</span>
+              <strong>{fmtMoney(evt.fee_member_cents)}</strong>
+            </div>
+          )}
+          {evt.fee_nonmember_cents != null && (
+            <div class="flex justify-between">
+              <span class="text-slate-600">Non-members</span>
+              <strong>{fmtMoney(evt.fee_nonmember_cents)}</strong>
+            </div>
+          )}
+        </div>
+      )}
+
+      {venue && (
+        <div class="border-t border-slate-200 pt-4">
+          <h3 class="font-semibold mb-2 text-xs uppercase tracking-wide text-slate-500">Venue</h3>
+          <p class="text-sm font-medium">
+            <a href={`/locations/${venue.slug}`} class="text-brand-700 hover:underline">{venue.name}</a>
+          </p>
+          {locAddress && <p class="text-xs text-slate-600 mt-1">{locAddress}</p>}
+          {hasVenueCoords && (
+            <a
+              href={googleMapsDirectionsUrl(venue.latitude!, venue.longitude!, venue.name)}
+              target="_blank" rel="noopener"
+              class="inline-block mt-2 text-xs text-brand-700 hover:underline"
+            >
+              Get directions →
+            </a>
+          )}
+        </div>
+      )}
+
+      {photographerCount > 0 && (
+        <div class="border-t border-slate-200 pt-4">
+          <h3 class="font-semibold mb-2 text-xs uppercase tracking-wide text-slate-500">
+            {photographerCount === 1 ? "Photographer" : "Photographers"}
+          </h3>
+          <ul class="text-sm space-y-1">
+            {photographers.map((p) => (
+              <li>
+                <a href={`/photographers/${p.photographer_slug}`} class="text-brand-700 hover:underline">
+                  {p.photographer_name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </aside>
+  </article>
+
+  {evt.course_map_image_key && (
+    <section class="border-t border-slate-200 bg-white">
+      <div class="max-w-4xl mx-auto px-4 py-10">
+        <div class="flex items-baseline justify-between mb-4 gap-4 flex-wrap">
+          <h2 class="font-display text-2xl font-semibold">Course map</h2>
+          <a href={`/media/${evt.course_map_image_key}`} target="_blank" rel="noopener" class="text-sm text-brand-700 hover:underline">
+            Open full size →
+          </a>
+        </div>
+        <a href={`/media/${evt.course_map_image_key}`} target="_blank" rel="noopener" class="block">
+          <img
+            src={`/media/${evt.course_map_image_key}`}
+            alt={`Course map for ${evt.title}`}
+            class="w-full rounded-lg border border-slate-200 bg-slate-50"
+          />
+        </a>
+      </div>
+    </section>
+  )}
+
+  {venue && hasVenueCoords && (
+    <section class="border-t border-slate-200 bg-slate-50">
+      <div class="max-w-4xl mx-auto px-4 py-10">
+        <div class="flex items-baseline justify-between mb-4 gap-4 flex-wrap">
+          <h2 class="font-display text-2xl font-semibold">Where is it?</h2>
+          <a href={`/locations/${venue.slug}`} class="text-sm text-brand-700 hover:underline">
+            Full venue page →
+          </a>
+        </div>
+        <div class="aspect-[16/9] bg-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+          <SatelliteMap
+            client:visible
+            lat={venue.latitude!}
+            lng={venue.longitude!}
+            label={venue.name}
+            zoom={18}
+          />
+        </div>
+      </div>
+    </section>
+  )}
+
+  {photos.length > 0 && (
+    <section class="border-t border-slate-200 bg-slate-50">
+      <div class="max-w-6xl mx-auto px-4 py-12">
+        <div class="flex items-baseline justify-between mb-6 gap-4 flex-wrap">
+          <h2 class="font-display text-2xl font-semibold">
+            Photos <span class="text-base font-normal text-slate-500">({photos.length})</span>
+          </h2>
+          {remaining > 0 && (
+            <a href={`/gallery/${evt.slug}`} class="text-sm text-brand-700 hover:underline">
+              View all {photos.length} photos →
+            </a>
+          )}
+        </div>
+
+        <PhotoMosaic
+          client:load
+          photos={mosaicPhotos}
+          hideEventLabel={true}
+          previewLimit={PHOTO_PREVIEW_LIMIT}
+        />
+
+        {remaining > 0 && (
+          <div class="text-center mt-6">
+            <a
+              href={`/gallery/${evt.slug}`}
+              class="inline-block bg-white border border-slate-300 hover:border-brand-500 px-5 py-2 rounded font-medium text-sm transition-colors"
+            >
+              Browse all {photos.length} photos →
+            </a>
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+</PublicLayout>

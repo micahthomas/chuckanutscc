@@ -1,0 +1,54 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { db } from "~/lib/db";
+import { fmtDateTime } from "~/lib/format";
+
+const id = Astro.params.id!;
+const msg = await db(Astro)
+  .prepare(
+    `SELECT id, name, email, subject, message, topic, status, created_at
+     FROM contact_submissions WHERE id = ?`,
+  )
+  .bind(id)
+  .first<{ id: string; name: string; email: string; subject: string | null;
+           message: string; topic: string | null; status: string; created_at: number }>();
+
+if (!msg) return new Response("Not found", { status: 404 });
+
+const flash = Astro.url.searchParams.get("flash");
+const mailto = `mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject ?? "your message")}`;
+---
+
+<AdminLayout title={msg.subject ?? "Contact message"}>
+  <a href="/admin/contact" class="text-sm text-brand-700 hover:underline">← Inbox</a>
+  <h1 class="text-2xl font-semibold mt-2 mb-1">{msg.subject ?? "(no subject)"}</h1>
+  <p class="text-sm text-slate-500 mb-4">
+    From {msg.name} &lt;{msg.email}&gt; · {fmtDateTime(msg.created_at)} · topic: {msg.topic}
+  </p>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <article class="bg-white border border-slate-200 rounded p-4 mb-6 whitespace-pre-wrap text-sm text-slate-800">
+    {msg.message}
+  </article>
+
+  <div class="flex gap-2 text-sm">
+    <a href={mailto} class="bg-brand-700 text-white px-4 py-2 rounded font-medium hover:bg-brand-900">
+      Reply via email
+    </a>
+    {(["new", "responded", "archived"] as const).map((s) => (
+      <form method="post" action="/admin/api/contact/set-status">
+        <input type="hidden" name="id" value={msg.id} />
+        <input type="hidden" name="status" value={s} />
+        <button
+          class={`px-4 py-2 rounded border ${msg.status === s ? "bg-slate-700 text-white border-slate-700" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+          disabled={msg.status === s}
+        >
+          Mark {s}
+        </button>
+      </form>
+    ))}
+  </div>
+</AdminLayout>

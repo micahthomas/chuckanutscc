@@ -1,0 +1,68 @@
+---
+import PublicLayout from "~/layouts/PublicLayout.astro";
+import EventCard from "~/components/public/EventCard.astro";
+import {
+  loadSettings,
+  loadHomePage,
+  loadUpcomingEvents,
+} from "~/lib/queries";
+
+const [settings, home, upcoming] = await Promise.all([
+  loadSettings(Astro),
+  loadHomePage(Astro),
+  loadUpcomingEvents(Astro, 3),
+]);
+
+const heroTitle = home?.hero_title ?? settings.club_name ?? "Chuckanut Sports Car Club";
+const heroSubtitle = home?.hero_subtitle ?? settings.tagline ?? "";
+const heroImageKey = home?.hero_image_key;
+const heroCtaText = home?.hero_cta_text ?? "See upcoming events";
+const heroCtaUrl = home?.hero_cta_url ?? "/events";
+---
+
+<PublicLayout description={heroSubtitle}>
+  <section class="relative isolate overflow-hidden bg-brand-900 text-white">
+    {heroImageKey && (
+      <img
+        src={`/media/${heroImageKey}`}
+        alt=""
+        class="absolute inset-0 -z-10 h-full w-full object-cover opacity-40"
+      />
+    )}
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-brand-900/50 via-brand-900/70 to-brand-900"></div>
+
+    <div class="max-w-6xl mx-auto px-4 py-28 sm:py-36 text-center">
+      <h1 class="font-display text-4xl sm:text-6xl font-bold mb-4 drop-shadow-md">{heroTitle}</h1>
+      <p class="text-lg sm:text-xl text-brand-100 max-w-2xl mx-auto">{heroSubtitle}</p>
+      <div class="mt-10 flex justify-center gap-3 flex-wrap">
+        <a href={heroCtaUrl} class="bg-white text-brand-900 px-6 py-3 rounded font-medium hover:bg-brand-50 transition-colors">
+          {heroCtaText}
+        </a>
+        <a href="/membership" class="border border-white/70 text-white px-6 py-3 rounded font-medium hover:bg-white/10 transition-colors">
+          Become a member
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="max-w-6xl mx-auto px-4 py-16">
+    <div class="flex items-baseline justify-between mb-8">
+      <h2 class="font-display text-3xl font-semibold">Upcoming events</h2>
+      <a href="/events" class="text-sm text-brand-700 hover:underline">View all →</a>
+    </div>
+
+    {upcoming.length === 0 && (
+      <p class="text-slate-500">No events on the calendar right now. Check back soon.</p>
+    )}
+
+    {upcoming.length > 0 && (
+      <ul class="grid gap-6 md:grid-cols-3">
+        {upcoming.map((evt) => (
+          <li>
+            <EventCard event={evt} />
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</PublicLayout>

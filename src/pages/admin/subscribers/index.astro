@@ -1,0 +1,84 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { db } from "~/lib/db";
+import { fmtDate } from "~/lib/format";
+
+const showInactive = Astro.url.searchParams.get("inactive") === "1";
+const where = showInactive ? "" : "WHERE unsubscribed_at IS NULL";
+
+const { results } = await db(Astro)
+  .prepare(
+    `SELECT id, email, name, source, subscribed_at, unsubscribed_at
+     FROM newsletter_subscribers ${where}
+     ORDER BY subscribed_at DESC`,
+  )
+  .all<{ id: string; email: string; name: string | null; source: string | null;
+          subscribed_at: number; unsubscribed_at: number | null }>();
+
+const counts = await db(Astro)
+  .prepare(
+    `SELECT
+       SUM(CASE WHEN unsubscribed_at IS NULL THEN 1 ELSE 0 END) AS active,
+       SUM(CASE WHEN unsubscribed_at IS NOT NULL THEN 1 ELSE 0 END) AS inactive
+     FROM newsletter_subscribers`,
+  )
+  .first<{ active: number; inactive: number }>();
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Newsletter">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Newsletter subscribers</h1>
+    <a href={`/admin/api/subscribers/export.csv?inactive=${showInactive ? "1" : "0"}`}
+       class="border border-slate-300 px-3 py-2 rounded text-sm hover:bg-slate-50">
+      Export CSV
+    </a>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <div class="flex gap-2 mb-6 text-sm">
+    <a href="/admin/subscribers" class={`px-3 py-1.5 rounded border ${!showInactive ? "bg-brand-700 text-white border-brand-700" : "border-slate-300"}`}>
+      Active ({counts?.active ?? 0})
+    </a>
+    <a href="/admin/subscribers?inactive=1" class={`px-3 py-1.5 rounded border ${showInactive ? "bg-brand-700 text-white border-brand-700" : "border-slate-300"}`}>
+      Include unsubscribed ({(counts?.active ?? 0) + (counts?.inactive ?? 0)})
+    </a>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    {results.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No subscribers.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Source</th>
+            <th class="px-4 py-2">Subscribed</th>
+            <th class="px-4 py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {results.map((s) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">{s.email}</td>
+              <td class="px-4 py-2 text-slate-500">{s.name ?? "—"}</td>
+              <td class="px-4 py-2 text-xs text-slate-500">{s.source ?? "—"}</td>
+              <td class="px-4 py-2 text-slate-500">{fmtDate(s.subscribed_at)}</td>
+              <td class="px-4 py-2">
+                {s.unsubscribed_at
+                  ? <span class="text-red-600 text-xs">Unsubscribed {fmtDate(s.unsubscribed_at)}</span>
+                  : <span class="text-emerald-700 text-xs">Active</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

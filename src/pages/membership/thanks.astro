@@ -1,0 +1,29 @@
+---
+import PublicLayout from "~/layouts/PublicLayout.astro";
+
+const sessionId = Astro.url.searchParams.get("session_id");
+const isMock = sessionId?.startsWith("mock_") ?? false;
+---
+
+<PublicLayout title="Membership confirmed">
+  <div class="max-w-2xl mx-auto px-4 py-16 text-center">
+    <h1 class="font-display text-4xl font-bold mb-4">You're in 🏁</h1>
+    <p class="text-slate-600 mb-6">
+      Your membership is active through December 31. We'll email a receipt and
+      add you to event reminders.
+    </p>
+    {isMock && (
+      <p class="text-xs text-slate-400 mb-6">
+        (Offline mock checkout — no real payment was processed.)
+      </p>
+    )}
+    <div class="flex gap-3 justify-center">
+      <a href="/events" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
+        See upcoming events
+      </a>
+      <a href="/" class="border border-slate-300 px-5 py-2 rounded hover:bg-slate-50">
+        Home
+      </a>
+    </div>
+  </div>
+</PublicLayout>

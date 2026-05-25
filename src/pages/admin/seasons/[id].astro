@@ -1,0 +1,38 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import SeasonForm from "~/components/admin/SeasonForm.astro";
+import { db } from "~/lib/db";
+
+const id = Astro.params.id!;
+const season = await db(Astro)
+  .prepare(`SELECT id, slug, year, name, description_md, is_current FROM seasons WHERE id = ?`)
+  .bind(id)
+  .first<Parameters<typeof SeasonForm>[0]["season"]>();
+if (!season) return new Response("Not found", { status: 404 });
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title={season.name}>
+  <a href="/admin/seasons" class="text-sm text-brand-700 hover:underline">← Seasons</a>
+  <div class="flex items-center justify-between mt-2 mb-6">
+    <h1 class="text-2xl font-semibold">{season.name}</h1>
+    <a href={season.is_current === 1 ? "/events" : `/events?season=${season.slug}`} target="_blank" class="text-sm text-slate-500 hover:underline">View public →</a>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <SeasonForm season={season} />
+
+  <section class="mt-12 max-w-2xl border-t border-slate-200 pt-6">
+    <h2 class="text-lg font-semibold mb-3 text-red-700">Danger zone</h2>
+    <form method="post" action="/admin/api/seasons/delete" onsubmit="return confirm('Delete this season? Events tagged to it will lose the link (but otherwise remain).')">
+      <input type="hidden" name="id" value={season.id} />
+      <button class="text-sm text-red-700 border border-red-200 px-3 py-1 rounded hover:bg-red-50">
+        Delete season
+      </button>
+    </form>
+  </section>
+</AdminLayout>

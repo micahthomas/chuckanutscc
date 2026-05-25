@@ -1,0 +1,149 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { loadSettings, loadMembershipTiers } from "~/lib/queries";
+import { fmtMoney } from "~/lib/format";
+
+const settings = await loadSettings(Astro);
+const tiers = await loadMembershipTiers(Astro);
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Settings">
+  <h1 class="text-2xl font-semibold mb-6">Site settings</h1>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <form method="post" action="/admin/api/settings/save" class="space-y-5 max-w-2xl bg-white border border-slate-200 rounded-lg p-6 mb-10">
+    <h2 class="text-lg font-semibold mb-2">Site identity</h2>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Club name</span>
+      <input type="text" name="club_name" value={settings.club_name ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Tagline</span>
+      <input type="text" name="tagline" value={settings.tagline ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Contact email</span>
+      <input type="email" name="contact_email" value={settings.contact_email ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <fieldset class="border border-slate-200 rounded p-4">
+      <legend class="text-sm font-medium text-slate-700 px-2">Scorekeeper integration</legend>
+
+      <label class="block mt-2">
+        <span class="text-xs text-slate-500">Series ID (used in admin event-form dropdown)</span>
+        <input type="text" name="scorekeeper_series" value={settings.scorekeeper_series ?? ""}
+          placeholder="cscc2026"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono" />
+        <p class="text-xs text-slate-400 mt-1">
+          Find this in your Scorekeeper URL: <code class="font-mono">scorekeeper.wwscc.org/results/<strong>cscc2026</strong></code>.
+          Leave blank to disable the Quick-fill dropdown in the event form.
+        </p>
+      </label>
+
+      <label class="block mt-3">
+        <span class="text-xs text-slate-500">Register URL (linked from the events page)</span>
+        <input type="url" name="register_url" value={settings.register_url ?? ""}
+          placeholder="https://scorekeeper.wwscc.org/register/cscc2026/events"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+
+      <label class="block mt-3">
+        <span class="text-xs text-slate-500">Season rules PDF (linked from the events page)</span>
+        <input type="url" name="season_rules_url" value={settings.season_rules_url ?? ""}
+          placeholder="https://..."
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+    </fieldset>
+
+    <fieldset class="border border-slate-200 rounded p-4">
+      <legend class="text-sm font-medium text-slate-700 px-2">Social links (shown in footer)</legend>
+
+      <label class="block mt-2">
+        <span class="text-xs text-slate-500">Instagram URL</span>
+        <input type="url" name="social_instagram_url" value={settings.social_instagram_url ?? ""}
+          placeholder="https://www.instagram.com/chuckanutscc"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+
+      <label class="block mt-3">
+        <span class="text-xs text-slate-500">Facebook URL</span>
+        <input type="url" name="social_facebook_url" value={settings.social_facebook_url ?? ""}
+          placeholder="https://www.facebook.com/ChuckanutSportsCarClub"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+    </fieldset>
+
+    <fieldset class="border border-slate-200 rounded p-4">
+      <legend class="text-sm font-medium text-slate-700 px-2">Announcement banner</legend>
+
+      <label class="flex items-center gap-2 mt-2">
+        <input type="checkbox" name="announcement_enabled" checked={settings.announcement_enabled === "1"} />
+        <span class="text-sm">Show banner at the top of every public page</span>
+      </label>
+
+      <label class="block mt-3">
+        <span class="text-xs text-slate-500">Text</span>
+        <input type="text" name="announcement_text" value={settings.announcement_text ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+
+      <label class="block mt-2">
+        <span class="text-xs text-slate-500">Link (optional)</span>
+        <input type="text" name="announcement_link" value={settings.announcement_link ?? ""}
+          placeholder="/events"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+    </fieldset>
+
+    <div class="pt-4 border-t border-slate-200">
+      <button type="submit" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
+        Save settings
+      </button>
+    </div>
+  </form>
+
+  <section class="max-w-2xl">
+    <h2 class="text-lg font-semibold mb-3">Membership tiers</h2>
+    <div class="bg-white border border-slate-200 rounded-lg overflow-hidden mb-3">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Price</th>
+            <th class="px-4 py-2">Visible</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tiers.map((t) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">
+                <a href={`/admin/settings/tiers/${t.id}`} class="text-brand-700 hover:underline">{t.name}</a>
+              </td>
+              <td class="px-4 py-2">{fmtMoney(t.annual_price_cents)}</td>
+              <td class="px-4 py-2">{t.visible === 1 ? "Yes" : "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mt-10 max-w-2xl text-sm text-slate-500">
+    <h3 class="font-semibold mb-1">Other settings live in code:</h3>
+    <ul class="list-disc ml-6 space-y-1 text-xs">
+      <li>Cloudflare Access allowlist (admin auth) — managed in Cloudflare dashboard</li>
+      <li>Stripe / Resend / Google secrets — set via <code class="font-mono">wrangler secret put</code></li>
+      <li>Newsletter sender domain — derived from <code class="font-mono">PUBLIC_SITE_URL</code> in wrangler.jsonc</li>
+    </ul>
+  </section>
+</AdminLayout>

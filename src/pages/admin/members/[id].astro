@@ -1,0 +1,90 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import MemberForm from "~/components/admin/MemberForm.astro";
+import { db } from "~/lib/db";
+import { fmtDate, fmtMoney } from "~/lib/format";
+
+const id = Astro.params.id!;
+const member = await db(Astro)
+  .prepare(
+    `SELECT id, name, email, phone,
+            address_line1, address_line2, city, state, postal_code,
+            car_info, family_member_name,
+            tier_id, expires_at, newsletter_opt_in, notes
+     FROM members WHERE id = ?`,
+  )
+  .bind(id)
+  .first<Parameters<typeof MemberForm>[0]["member"]>();
+
+if (!member) {
+  return new Response("Not found", { status: 404 });
+}
+
+const { results: payments } = await db(Astro)
+  .prepare(
+    `SELECT id, tier_id, amount_cents, membership_year, stripe_checkout_session_id, paid_at
+     FROM member_payments WHERE member_id = ? ORDER BY paid_at DESC`,
+  )
+  .bind(id)
+  .all<{
+    id: string; tier_id: string; amount_cents: number; membership_year: number;
+    stripe_checkout_session_id: string | null; paid_at: number;
+  }>();
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title={`Member: ${member.name}`}>
+  <a href="/admin/members" class="text-sm text-brand-700 hover:underline">← Members</a>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">{member.name}</h1>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <MemberForm member={member} />
+
+  <section class="mt-12 max-w-2xl">
+    <h2 class="text-lg font-semibold mb-3">Payment history</h2>
+    <div class="bg-white border border-slate-200 rounded overflow-hidden">
+      {payments.length === 0 ? (
+        <p class="p-4 text-sm text-slate-500">No recorded payments.</p>
+      ) : (
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+            <tr>
+              <th class="px-4 py-2">Year</th>
+              <th class="px-4 py-2">Tier</th>
+              <th class="px-4 py-2">Amount</th>
+              <th class="px-4 py-2">Paid</th>
+              <th class="px-4 py-2">Session</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map((p) => (
+              <tr class="border-t border-slate-100">
+                <td class="px-4 py-2">{p.membership_year}</td>
+                <td class="px-4 py-2">{p.tier_id}</td>
+                <td class="px-4 py-2">{fmtMoney(p.amount_cents)}</td>
+                <td class="px-4 py-2">{fmtDate(p.paid_at)}</td>
+                <td class="px-4 py-2 text-xs font-mono text-slate-400 truncate max-w-32">
+                  {p.stripe_checkout_session_id ?? "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </section>
+
+  <section class="mt-12 max-w-2xl border-t border-slate-200 pt-6">
+    <h2 class="text-lg font-semibold mb-3 text-red-700">Danger zone</h2>
+    <form method="post" action="/admin/api/members/delete" onsubmit="return confirm('Delete this member? Their payment history will be deleted too.')">
+      <input type="hidden" name="id" value={member.id} />
+      <button class="text-sm text-red-700 border border-red-200 px-3 py-1 rounded hover:bg-red-50">
+        Delete member
+      </button>
+    </form>
+  </section>
+</AdminLayout>

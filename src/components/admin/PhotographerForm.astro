@@ -1,0 +1,99 @@
+---
+import MarkdownEditor from "./MarkdownEditor.tsx";
+
+interface Props {
+  photographer?: {
+    id: string;
+    slug: string;
+    name: string;
+    bio_md: string | null;
+    portfolio_url: string | null;
+    instagram_url: string | null;
+    contact_email: string | null;
+    active: number;
+  };
+}
+
+const { photographer: p } = Astro.props;
+const isEdit = !!p;
+---
+
+<form method="post" action="/admin/api/photographers/save" class="space-y-5 max-w-2xl">
+  {isEdit && <input type="hidden" name="id" value={p!.id} />}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Name</span>
+      <input
+        type="text"
+        name="name"
+        required
+        value={p?.name ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+      />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Slug</span>
+      <input
+        type="text"
+        name="slug"
+        value={p?.slug ?? ""}
+        placeholder="auto-generated"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono"
+      />
+    </label>
+
+    <div class="md:col-span-2">
+      <MarkdownEditor
+        client:load
+        name="bio_md"
+        defaultValue={p?.bio_md ?? ""}
+        label="Bio (optional)"
+        rows={5}
+      />
+    </div>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Portfolio URL</span>
+      <input
+        type="url"
+        name="portfolio_url"
+        value={p?.portfolio_url ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+      />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Instagram URL</span>
+      <input
+        type="url"
+        name="instagram_url"
+        value={p?.instagram_url ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+      />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Contact email (officer-only)</span>
+      <input
+        type="email"
+        name="contact_email"
+        value={p?.contact_email ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+      />
+    </label>
+
+    <label class="flex items-center gap-2 mt-6">
+      <input type="checkbox" name="active" checked={p === undefined ? true : p.active === 1} />
+      <span class="text-sm font-medium text-slate-700">Active</span>
+    </label>
+  </div>
+
+  <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+    <button type="submit" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
+      {isEdit ? "Save changes" : "Create photographer"}
+    </button>
+    <a href="/admin/photographers" class="text-sm text-slate-500 hover:underline">Cancel</a>
+  </div>
+</form>

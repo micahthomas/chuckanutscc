@@ -1,0 +1,75 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { db } from "~/lib/db";
+import { fmtDateTime } from "~/lib/format";
+
+const status = (Astro.url.searchParams.get("status") ?? "new") as "new" | "responded" | "archived" | "all";
+const where = status === "all" ? "" : "WHERE status = ?";
+const binds: unknown[] = status === "all" ? [] : [status];
+
+const { results } = await db(Astro)
+  .prepare(
+    `SELECT id, name, email, subject, topic, status, created_at,
+            substr(message, 1, 200) AS preview
+     FROM contact_submissions
+     ${where}
+     ORDER BY created_at DESC`,
+  )
+  .bind(...binds)
+  .all<{ id: string; name: string; email: string; subject: string | null; topic: string | null;
+          status: string; created_at: number; preview: string }>();
+
+const counts = await db(Astro)
+  .prepare(
+    `SELECT
+       SUM(CASE WHEN status='new' THEN 1 ELSE 0 END) AS new,
+       SUM(CASE WHEN status='responded' THEN 1 ELSE 0 END) AS responded,
+       SUM(CASE WHEN status='archived' THEN 1 ELSE 0 END) AS archived,
+       COUNT(*) AS total
+     FROM contact_submissions`,
+  )
+  .first<{ new: number; responded: number; archived: number; total: number }>();
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Contact inbox">
+  <h1 class="text-2xl font-semibold mb-6">Contact inbox</h1>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <div class="flex gap-2 mb-6 text-sm">
+    {(["new", "responded", "archived", "all"] as const).map((s) => (
+      <a
+        href={`/admin/contact?status=${s}`}
+        class={`px-3 py-1.5 rounded border ${status === s ? "bg-brand-700 text-white border-brand-700" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+      >
+        {s}
+        <span class="opacity-70 ml-1">({s === "all" ? counts?.total : counts?.[s] ?? 0})</span>
+      </a>
+    ))}
+  </div>
+
+  {results.length === 0 ? (
+    <p class="text-slate-500">Empty.</p>
+  ) : (
+    <ul class="space-y-2">
+      {results.map((m) => (
+        <li class="bg-white border border-slate-200 rounded p-4">
+          <div class="flex items-baseline justify-between gap-4 mb-1">
+            <a href={`/admin/contact/${m.id}`} class="text-brand-700 font-medium hover:underline">
+              {m.subject || "(no subject)"}
+            </a>
+            <span class="text-xs text-slate-400 shrink-0">{fmtDateTime(m.created_at)}</span>
+          </div>
+          <p class="text-sm text-slate-500 mb-2">
+            {m.name} · {m.email} · <span class="uppercase text-xs">{m.topic}</span>
+          </p>
+          <p class="text-sm text-slate-700 line-clamp-2">{m.preview}{m.preview.length === 200 && "…"}</p>
+        </li>
+      ))}
+    </ul>
+  )}
+</AdminLayout>

@@ -1,0 +1,42 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import MerchItemForm from "~/components/admin/MerchItemForm.astro";
+import { db } from "~/lib/db";
+
+const id = Astro.params.id!;
+const item = await db(Astro)
+  .prepare(
+    `SELECT id, slug, title, description_md, options_json, available, notes, sort_order
+     FROM merch_items WHERE id = ?`,
+  )
+  .bind(id)
+  .first<Parameters<typeof MerchItemForm>[0]["item"]>();
+
+if (!item) return new Response("Not found", { status: 404 });
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title={`Edit: ${item.title}`}>
+  <a href="/admin/merch" class="text-sm text-brand-700 hover:underline">← Merch</a>
+  <div class="flex items-center justify-between mt-2 mb-6">
+    <h1 class="text-2xl font-semibold">{item.title}</h1>
+    <a href={`/merch/${item.slug}`} target="_blank" class="text-sm text-slate-500 hover:underline">View public →</a>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <MerchItemForm item={item} />
+
+  <section class="mt-12 max-w-2xl border-t border-slate-200 pt-6">
+    <h2 class="text-lg font-semibold mb-3 text-red-700">Danger zone</h2>
+    <form method="post" action="/admin/api/merch/delete" onsubmit="return confirm('Delete this item? Existing requests will be blocked.')">
+      <input type="hidden" name="id" value={item.id} />
+      <button class="text-sm text-red-700 border border-red-200 px-3 py-1 rounded hover:bg-red-50">
+        Delete item
+      </button>
+    </form>
+  </section>
+</AdminLayout>

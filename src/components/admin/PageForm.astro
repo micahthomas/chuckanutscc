@@ -1,0 +1,104 @@
+---
+import MarkdownEditor from "./MarkdownEditor.tsx";
+
+interface Props {
+  page?: {
+    id: string;
+    slug: string;
+    title: string;
+    body_md: string;
+    show_in_nav: number;
+    nav_order: number;
+    seo_title: string | null;
+    seo_description: string | null;
+  };
+}
+
+const { page } = Astro.props;
+const isEdit = !!page;
+---
+
+<form method="post" action="/admin/api/pages/save" class="space-y-5 max-w-3xl">
+  {isEdit && <input type="hidden" name="id" value={page!.id} />}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Title</span>
+      <input
+        type="text"
+        name="title"
+        required
+        value={page?.title ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+      />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Slug</span>
+      <input
+        type="text"
+        name="slug"
+        value={page?.slug ?? ""}
+        placeholder="auto-generated from title if blank"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono"
+      />
+    </label>
+  </div>
+
+  <MarkdownEditor
+    client:load
+    name="body_md"
+    defaultValue={page?.body_md ?? ""}
+    label="Body"
+    hint="Use the toolbar or type Markdown directly. Preview updates as you type."
+    rows={20}
+  />
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <label class="flex items-center gap-2 mt-6">
+      <input type="checkbox" name="show_in_nav" checked={page?.show_in_nav === 1} />
+      <span class="text-sm font-medium text-slate-700">Show in main navigation</span>
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Nav order</span>
+      <input
+        type="number"
+        name="nav_order"
+        min="0"
+        value={page?.nav_order ?? 0}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+      />
+    </label>
+  </div>
+
+  <fieldset class="border border-slate-200 rounded p-4">
+    <legend class="text-sm font-medium text-slate-700 px-2">SEO (optional)</legend>
+    <div class="grid grid-cols-1 gap-3 mt-1">
+      <label class="block">
+        <span class="text-xs text-slate-500">SEO title (overrides default)</span>
+        <input
+          type="text"
+          name="seo_title"
+          value={page?.seo_title ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs text-slate-500">SEO description</span>
+        <textarea
+          name="seo_description"
+          rows="2"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+        >{page?.seo_description ?? ""}</textarea>
+      </label>
+    </div>
+  </fieldset>
+
+  <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+    <button type="submit" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
+      {isEdit ? "Save changes" : "Create page"}
+    </button>
+    <a href="/admin/pages" class="text-sm text-slate-500 hover:underline">Cancel</a>
+  </div>
+</form>

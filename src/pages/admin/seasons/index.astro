@@ -1,0 +1,73 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { loadSeasons } from "~/lib/queries";
+import { db } from "~/lib/db";
+
+const seasons = await loadSeasons(Astro);
+
+// Count events per season for the list view.
+const { results: counts } = await db(Astro)
+  .prepare(`SELECT season_id, COUNT(*) AS n FROM events WHERE season_id IS NOT NULL GROUP BY season_id`)
+  .all<{ season_id: string; n: number }>();
+const countMap = Object.fromEntries(counts.map((r) => [r.season_id, r.n]));
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Seasons">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Seasons</h1>
+    <a href="/admin/seasons/new" class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900">
+      + New season
+    </a>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <p class="text-sm text-slate-500 mb-4">
+    The season flagged "current" is what visitors see at <code class="text-xs">/events</code> by default.
+    Past seasons are available at <code class="text-xs">/events?season=&lt;slug&gt;</code>.
+  </p>
+
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    {seasons.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No seasons yet.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Year</th>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Events</th>
+            <th class="px-4 py-2">Current</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {seasons.map((s) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-mono text-xs">{s.year}</td>
+              <td class="px-4 py-2">
+                <a href={`/admin/seasons/${s.id}`} class="text-brand-700 font-medium hover:underline">{s.name}</a>
+              </td>
+              <td class="px-4 py-2 text-slate-500">{countMap[s.id] ?? 0}</td>
+              <td class="px-4 py-2">
+                {s.is_current === 1
+                  ? <span class="text-emerald-700">★ Current</span>
+                  : <form method="post" action="/admin/api/seasons/set-current" class="inline">
+                      <input type="hidden" name="id" value={s.id} />
+                      <button class="text-xs text-slate-500 hover:underline">Make current</button>
+                    </form>}
+              </td>
+              <td class="px-4 py-2 text-right">
+                <a href={s.is_current === 1 ? "/events" : `/events?season=${s.slug}`} target="_blank" class="text-xs text-slate-500 hover:underline">View public →</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

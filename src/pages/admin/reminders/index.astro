@@ -1,0 +1,118 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { db, now } from "~/lib/db";
+import { fmtDateTime } from "~/lib/format";
+
+const ts = now();
+const { results: upcoming } = await db(Astro)
+  .prepare(
+    `SELECT r.id, r.reminder_type, r.scheduled_for, r.sent_at, r.recipient_count,
+            e.title, e.slug, e.start_at, e.status
+     FROM event_reminders r
+     JOIN events e ON e.id = r.event_id
+     WHERE r.sent_at IS NULL AND e.status IN ('scheduled', 'postponed')
+     ORDER BY r.scheduled_for ASC`,
+  )
+  .all<{ id: string; reminder_type: string; scheduled_for: number; sent_at: number | null;
+          recipient_count: number | null; title: string; slug: string; start_at: number; status: string }>();
+
+const { results: recent } = await db(Astro)
+  .prepare(
+    `SELECT r.id, r.reminder_type, r.scheduled_for, r.sent_at, r.recipient_count,
+            e.title, e.slug, e.start_at
+     FROM event_reminders r
+     JOIN events e ON e.id = r.event_id
+     WHERE r.sent_at IS NOT NULL
+     ORDER BY r.sent_at DESC
+     LIMIT 20`,
+  )
+  .all<{ id: string; reminder_type: string; scheduled_for: number; sent_at: number;
+          recipient_count: number | null; title: string; slug: string; start_at: number }>();
+
+const dueCount = upcoming.filter((r) => r.scheduled_for <= ts).length;
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Event reminders">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Event reminders</h1>
+    <form method="post" action="/admin/api/reminders/process">
+      <button class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900">
+        Process due reminders now ({dueCount})
+      </button>
+    </form>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <p class="text-sm text-slate-500 mb-6">
+    Reminders are scheduled when events are created/edited. In production a Cloudflare Cron Worker
+    calls the "process" endpoint every hour. Locally, hit the button above to fire any that are due.
+  </p>
+
+  <h2 class="text-sm uppercase tracking-wide text-slate-500 mb-2">Pending</h2>
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden mb-8">
+    {upcoming.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No pending reminders.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Event</th>
+            <th class="px-4 py-2">Type</th>
+            <th class="px-4 py-2">Event date</th>
+            <th class="px-4 py-2">Scheduled to send</th>
+            <th class="px-4 py-2">Due?</th>
+          </tr>
+        </thead>
+        <tbody>
+          {upcoming.map((r) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">
+                <a href={`/admin/events/${r.id}`} class="text-brand-700 hover:underline">{r.title}</a>
+              </td>
+              <td class="px-4 py-2 text-xs">{r.reminder_type.replace(/_/g, " ")}</td>
+              <td class="px-4 py-2 whitespace-nowrap">{fmtDateTime(r.start_at)}</td>
+              <td class="px-4 py-2 whitespace-nowrap">{fmtDateTime(r.scheduled_for)}</td>
+              <td class="px-4 py-2">
+                {r.scheduled_for <= ts
+                  ? <span class="text-amber-700 text-xs font-medium">Yes</span>
+                  : <span class="text-slate-400 text-xs">Not yet</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+
+  <h2 class="text-sm uppercase tracking-wide text-slate-500 mb-2">Recently sent</h2>
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    {recent.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No reminders sent yet.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Event</th>
+            <th class="px-4 py-2">Type</th>
+            <th class="px-4 py-2">Sent</th>
+            <th class="px-4 py-2">Recipients</th>
+          </tr>
+        </thead>
+        <tbody>
+          {recent.map((r) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">{r.title}</td>
+              <td class="px-4 py-2 text-xs">{r.reminder_type.replace(/_/g, " ")}</td>
+              <td class="px-4 py-2 whitespace-nowrap">{r.sent_at ? fmtDateTime(r.sent_at) : ""}</td>
+              <td class="px-4 py-2">{r.recipient_count ?? 0}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

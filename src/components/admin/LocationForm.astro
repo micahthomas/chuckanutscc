@@ -1,0 +1,102 @@
+---
+import ImageUpload from "./ImageUpload.tsx";
+import MarkdownEditor from "./MarkdownEditor.tsx";
+import type { LocationRow } from "~/lib/queries";
+
+interface Props {
+  loc?: LocationRow;
+}
+
+const { loc } = Astro.props;
+const isEdit = !!loc;
+---
+
+<form method="post" action="/admin/api/locations/save" class="space-y-5 max-w-2xl">
+  {isEdit && <input type="hidden" name="id" value={loc!.id} />}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Name</span>
+      <input type="text" name="name" required value={loc?.name ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Slug</span>
+      <input type="text" name="slug" value={loc?.slug ?? ""}
+        placeholder="auto-generated"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono" />
+    </label>
+
+    <label class="block md:col-span-2">
+      <span class="text-sm font-medium text-slate-700">Address</span>
+      <input type="text" name="address" value={loc?.address ?? ""}
+        placeholder="1 Bellis Fair Pkwy, Bellingham, WA 98226"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Latitude</span>
+      <input type="number" step="any" name="latitude" value={loc?.latitude ?? ""}
+        placeholder="48.7849"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Longitude</span>
+      <input type="number" step="any" name="longitude" value={loc?.longitude ?? ""}
+        placeholder="-122.4895"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono" />
+    </label>
+
+    <div class="md:col-span-2">
+      <ImageUpload
+        client:load
+        name="map_image_key"
+        category="venue-map"
+        defaultValue={loc?.map_image_key ?? null}
+        label="Venue map screenshot (optional)"
+        hint="Overrides the default OpenStreetMap embed on the venue page. Upload a marked-up map showing parking, gates, or other useful detail."
+      />
+    </div>
+
+    <div class="md:col-span-2">
+      <MarkdownEditor
+        client:load
+        name="description_md"
+        defaultValue={loc?.description_md ?? ""}
+        label="Description"
+        rows={5}
+      />
+    </div>
+
+    <div class="md:col-span-2">
+      <MarkdownEditor
+        client:load
+        name="directions_md"
+        defaultValue={loc?.directions_md ?? ""}
+        label="Directions & venue notes"
+        hint="Tip: use bulleted lists for parking/gate/food details."
+        rows={7}
+      />
+    </div>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Sort order</span>
+      <input type="number" name="sort_order" min="0" value={loc?.sort_order ?? 0}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="flex items-center gap-2 mt-6">
+      <input type="checkbox" name="active" checked={loc === undefined ? true : loc.active === 1} />
+      <span class="text-sm font-medium text-slate-700">Active (appears in public list)</span>
+    </label>
+  </div>
+
+  <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+    <button type="submit" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
+      {isEdit ? "Save changes" : "Create location"}
+    </button>
+    <a href="/admin/locations" class="text-sm text-slate-500 hover:underline">Cancel</a>
+  </div>
+</form>

@@ -1,0 +1,10 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import SeasonForm from "~/components/admin/SeasonForm.astro";
+---
+
+<AdminLayout title="New season">
+  <a href="/admin/seasons" class="text-sm text-brand-700 hover:underline">← Seasons</a>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">New season</h1>
+  <SeasonForm />
+</AdminLayout>

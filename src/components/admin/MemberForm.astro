@@ -1,0 +1,139 @@
+---
+import { loadMembershipTiers } from "~/lib/queries";
+import { toLocalDateTimeInput } from "~/lib/format";
+
+interface Props {
+  member?: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    address_line1: string | null;
+    address_line2: string | null;
+    city: string | null;
+    state: string | null;
+    postal_code: string | null;
+    car_info: string | null;
+    family_member_name: string | null;
+    tier_id: string | null;
+    expires_at: number | null;
+    newsletter_opt_in: number;
+    notes: string | null;
+  };
+}
+
+const { member } = Astro.props;
+const isEdit = !!member;
+const tiers = await loadMembershipTiers(Astro);
+---
+
+<form method="post" action="/admin/api/members/save" class="space-y-5 max-w-2xl">
+  {isEdit && <input type="hidden" name="id" value={member!.id} />}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Name</span>
+      <input type="text" name="name" required value={member?.name ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Email</span>
+      <input type="email" name="email" required value={member?.email ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Phone</span>
+      <input type="tel" name="phone" value={member?.phone ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Family member (same address)</span>
+      <input type="text" name="family_member_name" value={member?.family_member_name ?? ""}
+        placeholder="Included on this membership"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+  </div>
+
+  <fieldset class="border border-slate-200 rounded p-4">
+    <legend class="text-sm font-medium text-slate-700 px-2">Mailing address</legend>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+      <label class="block md:col-span-2">
+        <span class="text-xs text-slate-500">Street address</span>
+        <input type="text" name="address_line1" value={member?.address_line1 ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+      <label class="block md:col-span-2">
+        <span class="text-xs text-slate-500">Apt / suite</span>
+        <input type="text" name="address_line2" value={member?.address_line2 ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+      <label class="block">
+        <span class="text-xs text-slate-500">City</span>
+        <input type="text" name="city" value={member?.city ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="block">
+          <span class="text-xs text-slate-500">State</span>
+          <input type="text" name="state" value={member?.state ?? ""} maxlength="2"
+            class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm uppercase" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-slate-500">ZIP</span>
+          <input type="text" name="postal_code" value={member?.postal_code ?? ""}
+            class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+        </label>
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block md:col-span-2">
+      <span class="text-sm font-medium text-slate-700">Car info</span>
+      <input type="text" name="car_info" value={member?.car_info ?? ""}
+        placeholder="e.g. 1999 Mazda Miata"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Tier</span>
+      <select name="tier_id" class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white">
+        <option value="">— none —</option>
+        {tiers.map((t) => (
+          <option value={t.id} selected={member?.tier_id === t.id}>{t.name}</option>
+        ))}
+      </select>
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Expires at (Pacific)</span>
+      <input
+        type="datetime-local"
+        name="expires_at"
+        value={member?.expires_at ? toLocalDateTimeInput(member.expires_at) : ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+      />
+    </label>
+
+    <label class="flex items-center gap-2 mt-6">
+      <input type="checkbox" name="newsletter_opt_in" checked={member === undefined ? true : member.newsletter_opt_in === 1} />
+      <span class="text-sm font-medium text-slate-700">Newsletter opt-in</span>
+    </label>
+
+    <label class="block md:col-span-2">
+      <span class="text-sm font-medium text-slate-700">Notes (admin only)</span>
+      <textarea name="notes" rows="3"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm">{member?.notes ?? ""}</textarea>
+    </label>
+  </div>
+
+  <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+    <button type="submit" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
+      {isEdit ? "Save changes" : "Add member"}
+    </button>
+    <a href="/admin/members" class="text-sm text-slate-500 hover:underline">Cancel</a>
+  </div>
+</form>

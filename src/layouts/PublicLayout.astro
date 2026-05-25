@@ -1,0 +1,107 @@
+---
+import "~/styles/global.css";
+import { db } from "~/lib/db";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const pageTitle = title ? `${title} — Chuckanut Sports Car Club` : "Chuckanut Sports Car Club";
+
+const { results: navPages } = await db(Astro)
+  .prepare(`SELECT slug, title FROM pages WHERE show_in_nav = 1 ORDER BY nav_order ASC, title ASC`)
+  .all<{ slug: string; title: string }>();
+
+const { results: settingsRows } = await db(Astro)
+  .prepare(`SELECT key, value FROM settings WHERE key IN ('logo_key', 'social_instagram_url', 'social_facebook_url')`)
+  .all<{ key: string; value: string }>();
+const settingsMap = Object.fromEntries(settingsRows.map((r) => [r.key, r.value]));
+const logoKey = settingsMap.logo_key;
+const instagramUrl = settingsMap.social_instagram_url;
+const facebookUrl = settingsMap.social_facebook_url;
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    {description && <meta name="description" content={description} />}
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <header class="border-b border-slate-200">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+        <a href="/" class="flex items-center gap-3 font-display text-xl font-semibold text-brand-700">
+          {logoKey && <img src={`/media/${logoKey}`} alt="" class="w-9 h-9" />}
+          <span>Chuckanut Sports Car Club</span>
+        </a>
+        <nav class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <a href="/events" class="hover:text-brand-500">Events</a>
+          <a href="/locations" class="hover:text-brand-500">Locations</a>
+          <a href="/membership" class="hover:text-brand-500">Membership</a>
+          <a href="/shop" class="hover:text-brand-500">Shop</a>
+          <a href="/gallery" class="hover:text-brand-500">Gallery</a>
+          {navPages.map((p) => (
+            <a href={`/${p.slug}`} class="hover:text-brand-500">{p.title}</a>
+          ))}
+          <a href="/contact" class="hover:text-brand-500">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    {flash && (
+      <div class="bg-emerald-50 border-b border-emerald-200 text-emerald-900">
+        <div class="max-w-6xl mx-auto px-4 py-2 text-sm">{flash}</div>
+      </div>
+    )}
+
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <footer class="border-t border-slate-200 mt-16">
+      <div class="max-w-6xl mx-auto px-4 py-8 text-sm text-slate-500 flex flex-wrap items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+          <span>&copy; {new Date().getFullYear()} Chuckanut Sports Car Club &middot; Bellingham, WA</span>
+          {(instagramUrl || facebookUrl) && (
+            <span class="flex items-center gap-3">
+              {instagramUrl && (
+                <a href={instagramUrl} target="_blank" rel="noopener" aria-label="Instagram" class="text-slate-400 hover:text-brand-700 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                  </svg>
+                </a>
+              )}
+              {facebookUrl && (
+                <a href={facebookUrl} target="_blank" rel="noopener" aria-label="Facebook" class="text-slate-400 hover:text-brand-700 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                  </svg>
+                </a>
+              )}
+            </span>
+          )}
+        </div>
+        <form method="post" action="/api/newsletter/subscribe" class="flex gap-2">
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="Newsletter email"
+            class="border border-slate-300 rounded px-3 py-1 text-sm"
+          />
+          <button type="submit" class="bg-brand-700 text-white px-4 py-1 rounded text-sm hover:bg-brand-900">
+            Subscribe
+          </button>
+        </form>
+      </div>
+    </footer>
+  </body>
+</html>

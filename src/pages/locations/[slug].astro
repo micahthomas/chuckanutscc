@@ -1,0 +1,114 @@
+---
+import PublicLayout from "~/layouts/PublicLayout.astro";
+import { loadLocationBySlug } from "~/lib/queries";
+import { renderMarkdown } from "~/lib/markdown";
+import { googleMapsDirectionsUrl, googleMapsPinUrl } from "~/lib/maps";
+import { db, now } from "~/lib/db";
+import { fmtDate } from "~/lib/format";
+import SatelliteMap from "~/components/public/SatelliteMap.tsx";
+
+const slug = Astro.params.slug!;
+const loc = await loadLocationBySlug(Astro, slug);
+if (!loc) return new Response("Not found", { status: 404 });
+
+const { results: upcomingHere } = await db(Astro)
+  .prepare(
+    `SELECT id, slug, title, start_at
+     FROM events
+     WHERE location_id = ? AND status IN ('scheduled','postponed') AND start_at >= ?
+     ORDER BY start_at ASC
+     LIMIT 10`,
+  )
+  .bind(loc.id, now())
+  .all<{ id: string; slug: string; title: string; start_at: number }>();
+
+const descHtml = loc.description_md ? renderMarkdown(loc.description_md) : null;
+const directionsHtml = loc.directions_md ? renderMarkdown(loc.directions_md) : null;
+
+const hasCoords = loc.latitude !== null && loc.longitude !== null;
+---
+
+<PublicLayout title={loc.name} description={loc.address ?? undefined}>
+  <article class="max-w-4xl mx-auto px-4 py-12">
+    <a href="/locations" class="text-sm text-brand-700 hover:underline">← All locations</a>
+    <h1 class="font-display text-4xl font-bold mt-4 mb-2">{loc.name}</h1>
+    {loc.address && (
+      <p class="text-slate-600 mb-1">📍 {loc.address}</p>
+    )}
+    {hasCoords && (
+      <p class="text-xs text-slate-500 font-mono mb-6">
+        {loc.latitude!.toFixed(4)}, {loc.longitude!.toFixed(4)}
+      </p>
+    )}
+
+    {hasCoords && (
+      <div class="flex gap-3 mb-8 flex-wrap">
+        <a
+          href={googleMapsDirectionsUrl(loc.latitude!, loc.longitude!, loc.name)}
+          target="_blank" rel="noopener"
+          class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900"
+        >
+          Get directions →
+        </a>
+        <a
+          href={googleMapsPinUrl(loc.latitude!, loc.longitude!)}
+          target="_blank" rel="noopener"
+          class="border border-slate-300 px-5 py-2 rounded font-medium hover:bg-slate-50"
+        >
+          Open in Google Maps
+        </a>
+      </div>
+    )}
+
+    {descHtml && (
+      <div class="prose max-w-none mb-10" set:html={descHtml} />
+    )}
+
+    {hasCoords && (
+      <div class="mb-10">
+        <h2 class="font-display text-xl font-semibold mb-3">Map</h2>
+        <div class="aspect-[16/10] bg-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+          <SatelliteMap
+            client:visible
+            lat={loc.latitude!}
+            lng={loc.longitude!}
+            label={loc.name}
+            zoom={18}
+          />
+        </div>
+      </div>
+    )}
+
+    {loc.map_image_key && (
+      <div class="mb-10">
+        <h2 class="font-display text-xl font-semibold mb-3">Venue map</h2>
+        <img
+          src={`/media/${loc.map_image_key}`}
+          alt={`${loc.name} venue map`}
+          class="w-full rounded-lg border border-slate-200"
+        />
+      </div>
+    )}
+
+    {directionsHtml && (
+      <div class="mb-10">
+        <h2 class="font-display text-xl font-semibold mb-3">Getting there</h2>
+        <div class="prose max-w-none" set:html={directionsHtml} />
+      </div>
+    )}
+
+    {upcomingHere.length > 0 && (
+      <div class="mt-10 border-t border-slate-200 pt-6">
+        <h2 class="font-display text-xl font-semibold mb-3">Upcoming events here</h2>
+        <ul class="space-y-2 text-sm">
+          {upcomingHere.map((e) => (
+            <li class="flex items-baseline justify-between gap-4 py-2 border-b border-slate-100">
+              <a href={`/events/${e.slug}`} class="text-brand-700 hover:underline">{e.title}</a>
+              <span class="text-slate-500">{fmtDate(e.start_at)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </article>
+</PublicLayout>

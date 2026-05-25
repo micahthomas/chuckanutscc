@@ -1,0 +1,323 @@
+---
+import { toLocalDateTimeInput } from "~/lib/format";
+import { loadSettings, loadLocations, loadSeasons } from "~/lib/queries";
+import { fetchScorekeeperEvents } from "~/lib/scorekeeper";
+import ImageUpload from "./ImageUpload.tsx";
+import MarkdownEditor from "./MarkdownEditor.tsx";
+
+interface Props {
+  evt?: {
+    id: string;
+    slug: string;
+    title: string;
+    event_type: string;
+    status: string;
+    start_at: number;
+    end_at: number | null;
+    season_id: string | null;
+    location_id: string | null;
+    location_name: string | null;
+    location_address: string | null;
+    location_map_url: string | null;
+    description_md: string;
+    registration_url: string | null;
+    results_url: string | null;
+    run_groups_json: string | null;
+    fee_member_cents: number | null;
+    fee_nonmember_cents: number | null;
+    hero_image_key: string | null;
+    course_map_image_key: string | null;
+  };
+}
+
+const { evt } = Astro.props;
+const isEdit = !!evt;
+
+const eventTypes = ["autocross", "social", "meeting", "tour", "other"];
+const statuses = ["scheduled", "completed", "cancelled", "postponed"];
+
+const runGroups: string[] = evt?.run_groups_json ? JSON.parse(evt.run_groups_json) : [];
+
+// Try to pull the live event list from Scorekeeper so the admin can pick
+// from a dropdown instead of pasting URLs. Falls back to manual entry if
+// the API is unreachable or the series isn't configured.
+const [settings, locations, seasons] = await Promise.all([
+  loadSettings(Astro),
+  loadLocations(Astro, { activeOnly: true }),
+  loadSeasons(Astro),
+]);
+const currentSeason = seasons.find((s) => s.is_current === 1) ?? seasons[0] ?? null;
+const defaultSeasonId = evt?.season_id ?? currentSeason?.id ?? "";
+// Per-season Scorekeeper series wins, then global setting.
+const selectedSeason = seasons.find((s) => s.id === defaultSeasonId) ?? null;
+const scorekeeperSeries =
+  selectedSeason?.scorekeeper_series || settings.scorekeeper_series || "";
+const scorekeeperEvents = scorekeeperSeries
+  ? await fetchScorekeeperEvents(scorekeeperSeries)
+  : [];
+
+// Build a JS-side map of location id → name/address so the venue picker can
+// pre-fill the free-text override fields when the admin changes selection.
+const locationLookup = Object.fromEntries(
+  locations.map((l) => [l.id, { name: l.name, address: l.address ?? "" }]),
+);
+---
+
+<form method="post" action="/admin/api/events/save" class="space-y-5 max-w-3xl">
+  {isEdit && <input type="hidden" name="id" value={evt!.id} />}
+
+  {scorekeeperEvents.length > 0 && (
+    <div class="border border-brand-200 bg-brand-50 rounded-lg p-4">
+      <label class="block">
+        <div class="flex items-baseline justify-between mb-1">
+          <span class="text-sm font-medium text-brand-900">
+            Quick fill from Scorekeeper · <code class="font-mono text-xs">{scorekeeperSeries}</code>
+          </span>
+          <span class="text-xs text-brand-700">{scorekeeperEvents.length} live events</span>
+        </div>
+        <select id="scorekeeper-picker" class="w-full border border-brand-300 rounded px-3 py-2 text-sm bg-white">
+          <option value="">— manual entry —</option>
+          {scorekeeperEvents.map((e) => (
+            <option value={e.shortId} data-event={JSON.stringify(e)}>
+              {e.name} · {e.date}
+            </option>
+          ))}
+        </select>
+        <p class="text-xs text-brand-700 mt-1">
+          Picking an event fills the title, date, location, and Scorekeeper URLs below.
+          You can edit any field afterwards.
+        </p>
+      </label>
+    </div>
+  )}
+
+  {scorekeeperSeries && scorekeeperEvents.length === 0 && (
+    <div class="border border-amber-200 bg-amber-50 rounded p-3 text-xs text-amber-900">
+      Couldn't reach Scorekeeper for series <code class="font-mono">{scorekeeperSeries}</code> —
+      fill the URL fields manually below.
+    </div>
+  )}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Title</span>
+      <input type="text" name="title" required value={evt?.title ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Slug</span>
+      <input type="text" name="slug" value={evt?.slug ?? ""}
+        placeholder="Auto-generated from title if blank"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Event type</span>
+      <select name="event_type" class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white">
+        {eventTypes.map((t) => (
+          <option value={t} selected={evt?.event_type === t}>{t}</option>
+        ))}
+      </select>
+    </label>
+
+    <label class="block md:col-span-2">
+      <span class="text-sm font-medium text-slate-700">Season</span>
+      <select name="season_id" class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white">
+        <option value="">— unassigned —</option>
+        {seasons.map((s) => (
+          <option value={s.id} selected={defaultSeasonId === s.id}>
+            {s.name}{s.is_current === 1 ? " (current)" : ""}
+          </option>
+        ))}
+      </select>
+      <p class="text-xs text-slate-400 mt-1">
+        New events default to the current season. Manage seasons at <a href="/admin/seasons" class="text-brand-700 hover:underline">/admin/seasons</a>.
+      </p>
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Status</span>
+      <select name="status" class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white">
+        {statuses.map((s) => (
+          <option value={s} selected={evt?.status === s}>{s}</option>
+        ))}
+      </select>
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Start (Pacific time)</span>
+      <input type="datetime-local" name="start_at" required
+        value={evt ? toLocalDateTimeInput(evt.start_at) : ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">End (optional)</span>
+      <input type="datetime-local" name="end_at"
+        value={evt?.end_at ? toLocalDateTimeInput(evt.end_at) : ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+  </div>
+
+  <fieldset class="border border-slate-200 rounded p-4">
+    <legend class="text-sm font-medium text-slate-700 px-2">Venue</legend>
+
+    <label class="block mt-1">
+      <span class="text-xs text-slate-500">Pick from saved locations</span>
+      <select
+        id="venue-picker"
+        name="location_id"
+        data-locations={JSON.stringify(locationLookup)}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white"
+      >
+        <option value="">— no saved venue (use free-text fields below) —</option>
+        {locations.map((l) => (
+          <option value={l.id} selected={evt?.location_id === l.id}>{l.name}</option>
+        ))}
+      </select>
+      <p class="text-xs text-slate-400 mt-1">
+        Manage saved venues at <a href="/admin/locations" class="text-brand-700 hover:underline">/admin/locations</a>.
+        Picking one auto-fills the free-text fields below — you can still override them.
+      </p>
+    </label>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <label class="block">
+        <span class="text-xs text-slate-500">Location name (override)</span>
+        <input type="text" name="location_name" value={evt?.location_name ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+      <label class="block">
+        <span class="text-xs text-slate-500">Map URL (override)</span>
+        <input type="url" name="location_map_url" value={evt?.location_map_url ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+      <label class="block md:col-span-2">
+        <span class="text-xs text-slate-500">Address (override)</span>
+        <input type="text" name="location_address" value={evt?.location_address ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+    </div>
+  </fieldset>
+
+  <MarkdownEditor
+    client:load
+    name="description_md"
+    defaultValue={evt?.description_md ?? ""}
+    label="Description"
+    rows={8}
+  />
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <ImageUpload
+      client:load
+      name="hero_image_key"
+      category="event-hero"
+      defaultValue={evt?.hero_image_key ?? null}
+      label="Event hero image"
+      hint="Wide image (16:9 works best). Used as the page header and event card."
+    />
+
+    <ImageUpload
+      client:load
+      name="course_map_image_key"
+      category="course-map"
+      defaultValue={evt?.course_map_image_key ?? null}
+      label="Course map"
+      hint="Photo of the whiteboard course diagram — shows the route, grid, tech inspection, etc."
+    />
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Registration URL</span>
+      <input type="url" name="registration_url" value={evt?.registration_url ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Results URL</span>
+      <input type="url" name="results_url" value={evt?.results_url ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Run groups (comma-separated)</span>
+      <input type="text" name="run_groups" value={runGroups.join(", ")}
+        placeholder="Group A, Group B, Group C"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <div class="grid grid-cols-2 gap-2">
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Member fee (¢)</span>
+        <input type="number" name="fee_member_cents" min="0"
+          value={evt?.fee_member_cents ?? ""}
+          placeholder="4000 = $40"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Non-member fee (¢)</span>
+        <input type="number" name="fee_nonmember_cents" min="0"
+          value={evt?.fee_nonmember_cents ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+    </div>
+  </div>
+
+  <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+    <button type="submit" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
+      {isEdit ? "Save changes" : "Create event"}
+    </button>
+    <a href="/admin/events" class="text-sm text-slate-500 hover:underline">Cancel</a>
+  </div>
+</form>
+
+<script is:inline>
+  // Inline JS for the dropdowns. Two pickers, one form:
+  //   #scorekeeper-picker → fills title/date/URLs
+  //   #venue-picker       → fills location_name/address overrides
+  (() => {
+    const form = document.querySelector("form[action='/admin/api/events/save']");
+    if (!form) return;
+
+    const setIfEmpty = (name, value) => {
+      const el = form.elements.namedItem(name);
+      if (el && "value" in el && (el.value === "" || el.value === null)) el.value = value;
+    };
+    const setAlways = (name, value) => {
+      const el = form.elements.namedItem(name);
+      if (el && "value" in el) el.value = value;
+    };
+
+    const sk = document.getElementById("scorekeeper-picker");
+    if (sk) {
+      sk.addEventListener("change", () => {
+        const opt = sk.options[sk.selectedIndex];
+        const raw = opt?.dataset?.event;
+        if (!raw) return;
+        const evt = JSON.parse(raw);
+        const startISO = `${evt.date}T08:00`;
+        const endISO = `${evt.date}T16:00`;
+        setIfEmpty("title", evt.name);
+        setAlways("start_at", startISO);
+        setAlways("end_at", endISO);
+        setAlways("registration_url", evt.registrationUrl);
+        setAlways("results_url", evt.resultsUrl);
+        if (evt.location) setIfEmpty("location_address", evt.location);
+      });
+    }
+
+    const venue = document.getElementById("venue-picker");
+    if (venue) {
+      const lookup = JSON.parse(venue.dataset.locations || "{}");
+      venue.addEventListener("change", () => {
+        const v = lookup[venue.value];
+        if (!v) return;
+        setAlways("location_name", v.name);
+        setAlways("location_address", v.address);
+      });
+    }
+  })();
+</script>

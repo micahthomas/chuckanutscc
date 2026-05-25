@@ -1,0 +1,42 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { loadDashboardCounts } from "~/lib/queries";
+
+const counts = await loadDashboardCounts(Astro);
+
+const cards = [
+  { label: "Upcoming events",   value: counts.events_upcoming,     href: "/admin/events",      sub: `${counts.events_total} total` },
+  { label: "Active members",    value: counts.members_active,      href: "/admin/members",     sub: `${counts.members_expired} expired` },
+  { label: "Open merch requests", value: counts.merch_requests_open, href: "/admin/requests",  sub: null },
+  { label: "New contact messages", value: counts.contact_new,      href: "/admin/contact",     sub: null },
+  { label: "Live photos",       value: counts.photos_live,         href: "/admin/photos",      sub: `${counts.photos_hidden} hidden` },
+];
+---
+
+<AdminLayout title="Dashboard">
+  <h1 class="text-2xl font-semibold mb-1">Dashboard</h1>
+  <p class="text-sm text-slate-500 mb-8">
+    Signed in as {Astro.locals.admin?.email}
+  </p>
+
+  <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+    {cards.map((card) => (
+      <a
+        href={card.href}
+        class="block bg-white rounded-lg border border-slate-200 p-5 hover:border-brand-500 transition-colors"
+      >
+        <div class="text-xs uppercase tracking-wide text-slate-500 mb-1">{card.label}</div>
+        <div class="text-3xl font-semibold text-slate-900">{card.value}</div>
+        {card.sub && <div class="text-xs text-slate-400 mt-1">{card.sub}</div>}
+      </a>
+    ))}
+  </div>
+
+  <div class="mt-10 text-sm text-slate-500">
+    <p>
+      This is the offline demo. Data is loaded from local D1 (Miniflare) and seeded from
+      <code class="font-mono text-xs">seeds/demo.sql</code>. Run
+      <code class="font-mono text-xs">pnpm demo</code> to reset.
+    </p>
+  </div>
+</AdminLayout>

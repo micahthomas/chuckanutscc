@@ -1,0 +1,62 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { db } from "~/lib/db";
+import { fmtDate } from "~/lib/format";
+
+const { results } = await db(Astro)
+  .prepare(
+    `SELECT id, slug, title, show_in_nav, nav_order, updated_at, updated_by
+     FROM pages ORDER BY nav_order ASC, title ASC`,
+  )
+  .all<{ id: string; slug: string; title: string; show_in_nav: number; nav_order: number; updated_at: number; updated_by: string | null }>();
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Pages">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Pages</h1>
+    <a href="/admin/pages/new" class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900">
+      + New page
+    </a>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    {results.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No pages yet.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Title</th>
+            <th class="px-4 py-2">Slug</th>
+            <th class="px-4 py-2">In nav?</th>
+            <th class="px-4 py-2">Updated</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {results.map((p) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">
+                <a href={`/admin/pages/${p.id}`} class="text-brand-700 font-medium hover:underline">{p.title}</a>
+              </td>
+              <td class="px-4 py-2 font-mono text-xs">/{p.slug}</td>
+              <td class="px-4 py-2">
+                {p.show_in_nav === 1 ? <span class="text-emerald-700">Yes</span> : <span class="text-slate-400">—</span>}
+              </td>
+              <td class="px-4 py-2 text-slate-500">{fmtDate(p.updated_at)}</td>
+              <td class="px-4 py-2 text-right">
+                <a href={`/${p.slug}`} target="_blank" class="text-xs text-slate-500 hover:underline">View →</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

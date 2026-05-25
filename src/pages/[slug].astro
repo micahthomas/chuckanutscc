@@ -1,0 +1,23 @@
+---
+import PublicLayout from "~/layouts/PublicLayout.astro";
+import { loadPageBySlug } from "~/lib/queries";
+import { renderMarkdown } from "~/lib/markdown";
+
+const slug = Astro.params.slug!;
+const page = await loadPageBySlug(Astro, slug);
+
+if (!page) {
+  return new Response("Not found", { status: 404 });
+}
+
+const html = renderMarkdown(page.body_md);
+---
+
+<PublicLayout
+  title={page.seo_title ?? page.title}
+  description={page.seo_description ?? undefined}
+>
+  <article class="max-w-3xl mx-auto px-4 py-12">
+    <div class="prose max-w-none" set:html={html} />
+  </article>
+</PublicLayout>

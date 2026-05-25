@@ -1,0 +1,10 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import MerchItemForm from "~/components/admin/MerchItemForm.astro";
+---
+
+<AdminLayout title="New merch item">
+  <a href="/admin/merch" class="text-sm text-brand-700 hover:underline">← Merch</a>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">New merch item</h1>
+  <MerchItemForm />
+</AdminLayout>

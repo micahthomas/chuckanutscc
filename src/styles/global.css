@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50:  #f5f7fb;
+  --color-brand-100: #e7ecf6;
+  --color-brand-500: #2c4a7e;
+  --color-brand-700: #1d3a6b;
+  --color-brand-900: #0f1f3d;
+
+  --font-display: "Georgia", "Times New Roman", serif;
+}
+
+html { font-family: system-ui, -apple-system, sans-serif; }
+body { @apply bg-white text-slate-900 antialiased; }
+
+/* Prose styles for rendered markdown content (page bodies, event descriptions). */
+.prose h1 { @apply font-display text-4xl font-bold mb-4 mt-0; }
+.prose h2 { @apply font-display text-2xl font-semibold mt-8 mb-3; }
+.prose h3 { @apply font-semibold text-lg mt-6 mb-2; }
+.prose p  { @apply mb-4 leading-relaxed text-slate-700; }
+.prose ul { @apply list-disc list-outside ml-6 mb-4 space-y-1; }
+.prose ol { @apply list-decimal list-outside ml-6 mb-4 space-y-1; }
+.prose li { @apply text-slate-700; }
+.prose strong { @apply font-semibold text-slate-900; }
+.prose a  { @apply text-brand-700 underline hover:text-brand-900; }
+.prose code { @apply font-mono text-sm bg-slate-100 px-1.5 py-0.5 rounded; }
+.prose hr { @apply my-6 border-slate-200; }
+.prose img { @apply my-6 rounded-lg w-full border border-slate-200; }
+
+/* Compact prose for admin markdown preview panes (same rules, tighter spacing). */
+.md-preview h1 { @apply font-display text-xl font-bold mb-2 mt-0; }
+.md-preview h2 { @apply font-display text-lg font-semibold mt-4 mb-2; }
+.md-preview h3 { @apply font-semibold text-base mt-3 mb-1; }
+.md-preview p  { @apply mb-2 leading-snug text-slate-700; }
+.md-preview ul { @apply list-disc list-outside ml-5 mb-2 space-y-0.5; }
+.md-preview ol { @apply list-decimal list-outside ml-5 mb-2 space-y-0.5; }
+.md-preview li { @apply text-slate-700; }
+.md-preview strong { @apply font-semibold text-slate-900; }
+.md-preview em { @apply italic; }
+.md-preview a  { @apply text-brand-700 underline hover:text-brand-900; }
+.md-preview code { @apply font-mono text-xs bg-slate-100 px-1 py-0.5 rounded; }
+.md-preview blockquote { @apply border-l-2 border-slate-300 pl-3 italic text-slate-600 my-2; }
+.md-preview hr { @apply my-3 border-slate-200; }

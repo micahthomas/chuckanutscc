@@ -1,0 +1,51 @@
+---
+import "~/styles/global.css";
+
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+const adminEmail = Astro.locals.admin?.email ?? "unknown";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title ? `${title} — Admin` : "CSCC Admin"}</title>
+    <meta name="robots" content="noindex,nofollow" />
+  </head>
+  <body class="min-h-screen flex">
+    <aside class="w-56 bg-slate-900 text-slate-100 flex flex-col">
+      <div class="px-4 py-4 border-b border-slate-800">
+        <a href="/admin" class="font-semibold">CSCC Admin</a>
+      </div>
+      <nav class="flex-1 px-2 py-4 text-sm space-y-1">
+        <a href="/admin" class="block px-3 py-2 rounded hover:bg-slate-800">Dashboard</a>
+        <a href="/admin/events" class="block px-3 py-2 rounded hover:bg-slate-800">Events</a>
+        <a href="/admin/seasons" class="block px-3 py-2 rounded hover:bg-slate-800">Seasons</a>
+        <a href="/admin/locations" class="block px-3 py-2 rounded hover:bg-slate-800">Locations</a>
+        <a href="/admin/photographers" class="block px-3 py-2 rounded hover:bg-slate-800">Photographers</a>
+        <a href="/admin/photos" class="block px-3 py-2 rounded hover:bg-slate-800">Photos</a>
+        <a href="/admin/pages" class="block px-3 py-2 rounded hover:bg-slate-800">Pages</a>
+        <a href="/admin/members" class="block px-3 py-2 rounded hover:bg-slate-800">Members</a>
+        <a href="/admin/merch" class="block px-3 py-2 rounded hover:bg-slate-800">Merch</a>
+        <a href="/admin/requests" class="block px-3 py-2 rounded hover:bg-slate-800">Merch requests</a>
+        <a href="/admin/subscribers" class="block px-3 py-2 rounded hover:bg-slate-800">Newsletter</a>
+        <a href="/admin/reminders" class="block px-3 py-2 rounded hover:bg-slate-800">Reminders</a>
+        <a href="/admin/emails" class="block px-3 py-2 rounded hover:bg-slate-800">Email log</a>
+        <a href="/admin/contact" class="block px-3 py-2 rounded hover:bg-slate-800">Contact inbox</a>
+        <a href="/admin/settings" class="block px-3 py-2 rounded hover:bg-slate-800">Settings</a>
+      </nav>
+      <div class="px-4 py-3 border-t border-slate-800 text-xs text-slate-400 truncate">
+        {adminEmail}
+      </div>
+    </aside>
+
+    <main class="flex-1 bg-slate-50 p-8 overflow-auto">
+      <slot />
+    </main>
+  </body>
+</html>

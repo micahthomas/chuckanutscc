@@ -1,0 +1,44 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import PhotographerForm from "~/components/admin/PhotographerForm.astro";
+import { db } from "~/lib/db";
+
+const id = Astro.params.id!;
+const photographer = await db(Astro)
+  .prepare(
+    `SELECT id, slug, name, bio_md, portfolio_url, instagram_url, contact_email, active
+     FROM photographers WHERE id = ?`,
+  )
+  .bind(id)
+  .first<Parameters<typeof PhotographerForm>[0]["photographer"]>();
+
+if (!photographer) {
+  return new Response("Not found", { status: 404 });
+}
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title={`Edit: ${photographer.name}`}>
+  <a href="/admin/photographers" class="text-sm text-brand-700 hover:underline">← Photographers</a>
+  <div class="flex items-center justify-between mt-2 mb-6">
+    <h1 class="text-2xl font-semibold">{photographer.name}</h1>
+    <a href={`/photographers/${photographer.slug}`} target="_blank" class="text-sm text-slate-500 hover:underline">View public →</a>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <PhotographerForm photographer={photographer} />
+
+  <section class="mt-12 max-w-2xl border-t border-slate-200 pt-6">
+    <h2 class="text-lg font-semibold mb-3 text-red-700">Danger zone</h2>
+    <form method="post" action="/admin/api/photographers/delete" onsubmit="return confirm('Delete this photographer? Their event assignments and photos will be blocked.')">
+      <input type="hidden" name="id" value={photographer.id} />
+      <button class="text-sm text-red-700 border border-red-200 px-3 py-1 rounded hover:bg-red-50">
+        Delete photographer
+      </button>
+    </form>
+  </section>
+</AdminLayout>

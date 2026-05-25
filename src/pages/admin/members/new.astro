@@ -1,0 +1,10 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import MemberForm from "~/components/admin/MemberForm.astro";
+---
+
+<AdminLayout title="Add member">
+  <a href="/admin/members" class="text-sm text-brand-700 hover:underline">← Members</a>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">Add member</h1>
+  <MemberForm />
+</AdminLayout>

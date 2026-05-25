@@ -1,0 +1,133 @@
+---
+import PublicLayout from "~/layouts/PublicLayout.astro";
+import { loadMembershipTiers } from "~/lib/queries";
+import { fmtMoney } from "~/lib/format";
+import { renderMarkdown } from "~/lib/markdown";
+
+// Sole visible tier — the join form is rendered once below it.
+const tiers = await loadMembershipTiers(Astro, { visibleOnly: true });
+const tier = tiers[0];
+const currentYear = new Date().getUTCFullYear();
+const benefits: string[] = tier ? JSON.parse(tier.benefits_json || "[]") : [];
+const descHtml = tier?.description_md ? renderMarkdown(tier.description_md) : null;
+---
+
+<PublicLayout title="Membership" description="Join the Chuckanut Sports Car Club.">
+  <div class="max-w-3xl mx-auto px-4 py-12">
+    <h1 class="font-display text-4xl font-bold mb-2">Membership</h1>
+    <p class="text-slate-600 mb-1">
+      Memberships run the full calendar year. Pay now to join for the rest of {currentYear}.
+    </p>
+    <p class="text-sm text-slate-500 mb-10">
+      Already a member? Renewals open in January each year — we'll send a reminder.
+    </p>
+
+    {!tier && (
+      <p class="text-slate-500">Membership isn't open right now — check back soon.</p>
+    )}
+
+    {tier && (
+      <div class="border border-slate-200 rounded-xl overflow-hidden">
+        {/* Header card */}
+        <div class="bg-brand-900 text-white px-6 py-6 flex items-baseline justify-between gap-4 flex-wrap">
+          <div>
+            <h2 class="font-display text-2xl font-semibold">{tier.name}</h2>
+            <p class="text-brand-100 text-sm mt-1">
+              Includes one same-address family member at no additional cost.
+            </p>
+          </div>
+          <div class="text-3xl font-bold">
+            {fmtMoney(tier.annual_price_cents)}
+            <span class="text-base font-normal text-brand-100">/year</span>
+          </div>
+        </div>
+
+        <div class="px-6 py-6 grid gap-8 md:grid-cols-3">
+          <div class="md:col-span-1 text-sm">
+            {descHtml && <div class="prose prose-sm text-slate-700 mb-4" set:html={descHtml} />}
+            {benefits.length > 0 && (
+              <ul class="space-y-1.5 text-slate-700">
+                {benefits.map((b) => (
+                  <li class="flex items-start gap-2">
+                    <span class="text-brand-700 mt-0.5">✓</span>
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <form method="post" action="/api/membership/checkout" class="md:col-span-2 space-y-4">
+            <input type="hidden" name="tier_id" value={tier.id} />
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label class="block">
+                <span class="text-xs font-medium text-slate-600">Your full name *</span>
+                <input type="text" name="name" required
+                  class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+              </label>
+              <label class="block">
+                <span class="text-xs font-medium text-slate-600">Email *</span>
+                <input type="email" name="email" required
+                  class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+              </label>
+              <label class="block md:col-span-2">
+                <span class="text-xs font-medium text-slate-600">Phone</span>
+                <input type="tel" name="phone"
+                  class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+              </label>
+
+              <label class="block md:col-span-2">
+                <span class="text-xs font-medium text-slate-600">Street address *</span>
+                <input type="text" name="address_line1" required
+                  class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+              </label>
+              <label class="block md:col-span-2">
+                <span class="text-xs font-medium text-slate-600">Apt / suite (optional)</span>
+                <input type="text" name="address_line2"
+                  class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+              </label>
+              <label class="block">
+                <span class="text-xs font-medium text-slate-600">City *</span>
+                <input type="text" name="city" required value="Bellingham"
+                  class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+              </label>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="block">
+                  <span class="text-xs font-medium text-slate-600">State *</span>
+                  <input type="text" name="state" required value="WA" maxlength="2"
+                    class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm uppercase" />
+                </label>
+                <label class="block">
+                  <span class="text-xs font-medium text-slate-600">ZIP *</span>
+                  <input type="text" name="postal_code" required pattern="[0-9]{5}(-[0-9]{4})?"
+                    class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                </label>
+              </div>
+
+              <label class="block md:col-span-2">
+                <span class="text-xs font-medium text-slate-600">Car (optional — make, model, year)</span>
+                <input type="text" name="car_info" placeholder="e.g. 1999 Mazda Miata"
+                  class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+              </label>
+
+              <label class="block md:col-span-2">
+                <span class="text-xs font-medium text-slate-600">Family member at same address (optional)</span>
+                <input type="text" name="family_member_name" placeholder="Their full name"
+                  class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                <p class="text-xs text-slate-400 mt-1">
+                  One family member living at the same address is included — no extra charge.
+                </p>
+              </label>
+            </div>
+
+            <button type="submit"
+              class="w-full bg-brand-700 text-white px-4 py-2.5 rounded font-medium hover:bg-brand-900">
+              Join — {fmtMoney(tier.annual_price_cents)}
+            </button>
+          </form>
+        </div>
+      </div>
+    )}
+  </div>
+</PublicLayout>

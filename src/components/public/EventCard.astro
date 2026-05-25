@@ -1,0 +1,82 @@
+---
+import type { EventRow } from "~/lib/queries";
+import { fmtTime, fmtMoney } from "~/lib/format";
+
+interface Props {
+  event: EventRow;
+}
+
+const { event } = Astro.props;
+
+// Pull month + day separately so we can render a calendar-style date block.
+const tz = "America/Los_Angeles";
+const monthFmt = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: tz });
+const dayFmt   = new Intl.DateTimeFormat("en-US", { day: "numeric", timeZone: tz });
+const weekdayFmt = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: tz });
+
+const ms = event.start_at * 1000;
+const month = monthFmt.format(ms).toUpperCase();
+const day = dayFmt.format(ms);
+const weekday = weekdayFmt.format(ms);
+
+const statusBadge = event.status === "completed"
+  ? { label: "Completed", tone: "bg-slate-100 text-slate-600" }
+  : event.status === "cancelled"
+    ? { label: "Cancelled", tone: "bg-red-100 text-red-700" }
+    : event.status === "postponed"
+      ? { label: "Postponed", tone: "bg-amber-100 text-amber-800" }
+      : null;
+
+// Use the event's own hero if set, otherwise the random gallery photo
+// `loadX` queries attach via attachFallbackHeroes.
+const heroKey = event.hero_image_key ?? event.fallback_hero_key;
+---
+
+<a
+  href={`/events/${event.slug}`}
+  class="group block bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-brand-500 hover:shadow-lg transition-all"
+>
+  <div class="relative aspect-[16/9] bg-gradient-to-br from-brand-700 to-brand-900 overflow-hidden">
+    {heroKey && (
+      <img
+        src={`/media/${heroKey}`}
+        alt=""
+        loading="lazy"
+        class="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+      />
+    )}
+    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+
+    {/* Date block badge */}
+    <div class="absolute top-4 left-4 bg-white rounded-lg shadow-md overflow-hidden text-center w-16">
+      <div class="bg-brand-700 text-white text-[10px] font-semibold tracking-wider py-1">{month}</div>
+      <div class="text-slate-900 font-display text-2xl font-bold leading-none py-1.5">{day}</div>
+    </div>
+
+    {statusBadge && (
+      <div class={`absolute top-4 right-4 text-xs font-medium px-2 py-1 rounded ${statusBadge.tone}`}>
+        {statusBadge.label}
+      </div>
+    )}
+
+    <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
+      <div class="text-xs uppercase tracking-wider text-white/70 mb-1">{event.event_type}</div>
+      <h3 class="font-display text-xl font-semibold leading-tight drop-shadow">{event.title}</h3>
+    </div>
+  </div>
+
+  <div class="p-4 text-sm">
+    <div class="flex items-center justify-between text-slate-600 mb-2">
+      <span>{weekday} · {fmtTime(event.start_at)}</span>
+      {event.fee_member_cents != null && (
+        <span class="text-slate-500">From {fmtMoney(event.fee_member_cents)}</span>
+      )}
+    </div>
+    {event.location_name && (
+      <div class="text-slate-500 text-xs flex items-center gap-1">
+        <span>📍</span>
+        <span class="truncate">{event.location_name}</span>
+      </div>
+    )}
+  </div>
+</a>

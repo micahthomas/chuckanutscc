@@ -1,0 +1,79 @@
+---
+import PublicLayout from "~/layouts/PublicLayout.astro";
+import { loadSettings } from "~/lib/queries";
+
+const settings = await loadSettings(Astro);
+const contactEmail = settings.contact_email;
+---
+
+<PublicLayout title="Contact" description="Get in touch with the Chuckanut Sports Car Club.">
+  <div class="max-w-2xl mx-auto px-4 py-12">
+    <h1 class="font-display text-4xl font-bold mb-2">Contact us</h1>
+    <p class="text-slate-600 mb-8">
+      Questions about the club, membership, or events? Drop us a note.
+      {contactEmail && (
+        <> Or email us directly at{" "}
+          <a href={`mailto:${contactEmail}`} class="text-brand-700 hover:underline">{contactEmail}</a>.
+        </>
+      )}
+    </p>
+
+    <form method="post" action="/api/contact" class="space-y-4 border border-slate-200 rounded-lg p-6 bg-slate-50">
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Your name</span>
+        <input
+          type="text"
+          name="name"
+          required
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white"
+        />
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Email</span>
+        <input
+          type="email"
+          name="email"
+          required
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white"
+        />
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Topic</span>
+        <select name="topic" class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white">
+          <option value="general">General question</option>
+          <option value="membership">Membership</option>
+          <option value="events">Events / autocross</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Subject</span>
+        <input
+          type="text"
+          name="subject"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white"
+        />
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Message</span>
+        <textarea
+          name="message"
+          rows="5"
+          required
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white"
+        ></textarea>
+      </label>
+
+      <button
+        type="submit"
+        class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900"
+      >
+        Send message
+      </button>
+    </form>
+  </div>
+</PublicLayout>

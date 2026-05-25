@@ -1,0 +1,53 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { loadPhotographers } from "~/lib/queries";
+
+const photographers = await loadPhotographers(Astro);
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Photographers">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Photographers</h1>
+    <a href="/admin/photographers/new" class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900">
+      + New photographer
+    </a>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    {photographers.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No photographers yet.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Active</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {photographers.map((p) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">
+                <a href={`/admin/photographers/${p.id}`} class="text-brand-700 font-medium hover:underline">{p.name}</a>
+              </td>
+              <td class="px-4 py-2 text-slate-500">{p.contact_email ?? "—"}</td>
+              <td class="px-4 py-2">
+                {p.active === 1 ? <span class="text-emerald-700">Yes</span> : <span class="text-slate-400">No</span>}
+              </td>
+              <td class="px-4 py-2 text-right">
+                <a href={`/photographers/${p.slug}`} target="_blank" class="text-xs text-slate-500 hover:underline">View public →</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

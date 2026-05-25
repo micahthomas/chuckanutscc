@@ -1,0 +1,84 @@
+---
+import MarkdownEditor from "./MarkdownEditor.tsx";
+
+interface Props {
+  item?: {
+    id: string;
+    slug: string;
+    title: string;
+    description_md: string;
+    options_json: string;
+    available: number;
+    notes: string | null;
+    sort_order: number;
+  };
+}
+
+const { item } = Astro.props;
+const isEdit = !!item;
+
+const options: Array<{ name: string; choices: string[] }> = item ? JSON.parse(item.options_json || "[]") : [];
+const optionsText = options.map((o) => `${o.name}: ${o.choices.join(", ")}`).join("\n");
+---
+
+<form method="post" action="/admin/api/merch/save" class="space-y-5 max-w-2xl">
+  {isEdit && <input type="hidden" name="id" value={item!.id} />}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Title</span>
+      <input type="text" name="title" required value={item?.title ?? ""}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Slug</span>
+      <input type="text" name="slug" value={item?.slug ?? ""} placeholder="auto-generated"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono" />
+    </label>
+  </div>
+
+  <MarkdownEditor
+    client:load
+    name="description_md"
+    defaultValue={item?.description_md ?? ""}
+    label="Description"
+    rows={6}
+  />
+
+  <label class="block">
+    <span class="text-sm font-medium text-slate-700">Options (optional)</span>
+    <textarea name="options" rows="4" placeholder="Size: S, M, L, XL&#10;Color: Black, Heather Grey"
+      class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono"
+    >{optionsText}</textarea>
+    <p class="text-xs text-slate-400 mt-1">
+      One option per line, in the format <code>Name: choice1, choice2</code>. Leave empty for items
+      with no variants (stickers, hats).
+    </p>
+  </label>
+
+  <label class="block">
+    <span class="text-sm font-medium text-slate-700">Admin notes (shown publicly on item page)</span>
+    <input type="text" name="notes" value={item?.notes ?? ""}
+      placeholder="e.g. Next bulk order: late June"
+      class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+  </label>
+
+  <div class="grid grid-cols-2 gap-4">
+    <label class="flex items-center gap-2 mt-2">
+      <input type="checkbox" name="available" checked={item === undefined ? true : item.available === 1} />
+      <span class="text-sm font-medium text-slate-700">Available for requests</span>
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Sort order</span>
+      <input type="number" name="sort_order" min="0" value={item?.sort_order ?? 0}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+  </div>
+
+  <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+    <button type="submit" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
+      {isEdit ? "Save changes" : "Create item"}
+    </button>
+    <a href="/admin/merch" class="text-sm text-slate-500 hover:underline">Cancel</a>
+  </div>
+</form>

@@ -1,0 +1,60 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { loadMerchItems } from "~/lib/queries";
+
+const items = (await loadMerchItems(Astro)).map((i) => ({
+  ...i,
+  optionNames: (JSON.parse(i.options_json || "[]") as Array<{ name: string }>)
+    .map((o) => o.name)
+    .join(", "),
+}));
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Merch">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Merch items</h1>
+    <a href="/admin/merch/new" class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900">
+      + New item
+    </a>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    {items.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No items yet.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Title</th>
+            <th class="px-4 py-2">Slug</th>
+            <th class="px-4 py-2">Options</th>
+            <th class="px-4 py-2">Available</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((i) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">
+                <a href={`/admin/merch/${i.id}`} class="text-brand-700 font-medium hover:underline">{i.title}</a>
+              </td>
+              <td class="px-4 py-2 font-mono text-xs">{i.slug}</td>
+              <td class="px-4 py-2 text-xs text-slate-500">{i.optionNames || "—"}</td>
+              <td class="px-4 py-2">
+                {i.available === 1 ? <span class="text-emerald-700">Yes</span> : <span class="text-slate-400">No</span>}
+              </td>
+              <td class="px-4 py-2 text-right">
+                <a href={`/merch/${i.slug}`} target="_blank" class="text-xs text-slate-500 hover:underline">View →</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

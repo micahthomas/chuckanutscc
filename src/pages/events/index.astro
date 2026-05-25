@@ -1,0 +1,185 @@
+---
+import PublicLayout from "~/layouts/PublicLayout.astro";
+import EventCard from "~/components/public/EventCard.astro";
+import {
+  loadSettings,
+  loadSeasons,
+  loadCurrentSeason,
+  loadSeasonBySlug,
+  loadSeasonEvents,
+} from "~/lib/queries";
+import { renderMarkdown } from "~/lib/markdown";
+import { fmtDate, fmtTime } from "~/lib/format";
+
+const [settings, allSeasons, currentSeason] = await Promise.all([
+  loadSettings(Astro),
+  loadSeasons(Astro),
+  loadCurrentSeason(Astro),
+]);
+
+// `?season=<slug>` picks a specific year; default is the current season.
+const requestedSlug = Astro.url.searchParams.get("season");
+const season = requestedSlug ? await loadSeasonBySlug(Astro, requestedSlug) : currentSeason;
+const isCurrentSeason = !!season && season.id === currentSeason?.id;
+
+const seasonEvents = season ? await loadSeasonEvents(Astro, season.id) : [];
+const ts = Math.floor(Date.now() / 1000);
+const upcoming = seasonEvents.filter((e) =>
+  (e.status === "scheduled" || e.status === "postponed") && e.start_at >= ts,
+);
+const past = seasonEvents
+  .filter((e) => e.status === "completed" || e.start_at < ts)
+  .sort((a, b) => b.start_at - a.start_at);
+
+const registerUrl = settings.register_url ?? "https://scorekeeper.wwscc.org/register/cscc2026/events";
+const seasonRulesUrl = settings.season_rules_url;
+const scorekeeperSeries = season?.scorekeeper_series || settings.scorekeeper_series || "cscc2026";
+const championshipUrl = `https://scorekeeper.wwscc.org/results/${scorekeeperSeries}`;
+
+const tz = "America/Los_Angeles";
+const monthYearFmt = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: tz });
+const upcomingByMonth = new Map<string, typeof upcoming>();
+for (const evt of upcoming) {
+  const key = monthYearFmt.format(evt.start_at * 1000);
+  const arr = upcomingByMonth.get(key) ?? [];
+  arr.push(evt);
+  upcomingByMonth.set(key, arr);
+}
+
+const otherSeasons = allSeasons.filter((s) => s.id !== season?.id);
+const descHtml = season?.description_md ? renderMarkdown(season.description_md) : null;
+
+const resources = [
+  { icon: "📖", title: "New to autocross?", desc: "What it is, what to bring, helmet rules, and what to expect on event day.", href: "/autocross", cta: "Read the guide →", external: false },
+  { icon: "🏁", title: "How to register",  desc: "Sign up for any event on Scorekeeper. You'll need CSCC membership or pay $10 at the event for a temp.", href: registerUrl, cta: "Open Scorekeeper →", external: true },
+  ...(seasonRulesUrl ? [{ icon: "📋", title: `${season?.year ?? new Date().getUTCFullYear()} season rules`, desc: "Class structure, scoring, championship eligibility, and event-day procedures.", href: seasonRulesUrl, cta: "Open PDF →", external: true }] : []),
+  { icon: "🎟️", title: "Become a member", desc: "Full-season membership unlocks reduced entry fees and supports the club.", href: "/membership", cta: "Join CSCC →", external: false },
+];
+
+const pageTitle = season ? `${season.year} Season` : "Events";
+---
+
+<PublicLayout title={pageTitle} description="Chuckanut Sports Car Club autocross calendar.">
+  <section class="border-b border-slate-200 bg-slate-50">
+    <div class="max-w-5xl mx-auto px-4 py-12">
+      <div class="flex items-baseline gap-3 flex-wrap mb-2">
+        <p class="text-xs uppercase tracking-wider text-brand-700 font-semibold">
+          {season ? `${season.year} Season` : "Events"}
+        </p>
+        {season && isCurrentSeason && (
+          <span class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+            Current
+          </span>
+        )}
+        {season && !isCurrentSeason && currentSeason && (
+          <a href="/events" class="text-xs text-brand-700 hover:underline">
+            ← Back to current ({currentSeason.year})
+          </a>
+        )}
+      </div>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">
+        {season ? season.name : "Calendar"}
+      </h1>
+      {descHtml ? (
+        <div class="prose prose-sm text-slate-600 max-w-2xl" set:html={descHtml} />
+      ) : (
+        <p class="text-slate-600 max-w-2xl">All events take place at Bellis Fair Mall in Bellingham, WA.</p>
+      )}
+      <p class="text-slate-600 max-w-2xl mt-2 text-sm">
+        Championship standings at
+        <a href={championshipUrl} target="_blank" rel="noopener" class="text-brand-700 hover:underline">scorekeeper.wwscc.org</a>.
+      </p>
+    </div>
+  </section>
+
+  {isCurrentSeason && (
+    <section class="max-w-5xl mx-auto px-4 py-8">
+      <h2 class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Getting started</h2>
+      <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {resources.map((r) => (
+          <li>
+            <a href={r.href} target={r.external ? "_blank" : undefined} rel={r.external ? "noopener" : undefined}
+              class="group block h-full bg-white border border-slate-200 rounded-lg p-4 hover:border-brand-500 hover:shadow-sm transition-all">
+              <div class="text-2xl mb-2">{r.icon}</div>
+              <h3 class="font-semibold text-sm text-slate-900 mb-1">{r.title}</h3>
+              <p class="text-xs text-slate-600 mb-3 leading-snug">{r.desc}</p>
+              <p class="text-xs text-brand-700 group-hover:underline font-medium">{r.cta}</p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <section class="max-w-5xl mx-auto px-4 py-8">
+    {!season && (
+      <p class="text-slate-500">No season set up yet.</p>
+    )}
+
+    {season && upcoming.length === 0 && past.length === 0 && (
+      <p class="text-slate-500">No events recorded for the {season.year} season.</p>
+    )}
+
+    {upcoming.length > 0 && Array.from(upcomingByMonth.entries()).map(([month, events]) => (
+      <div class="mb-12 last:mb-0">
+        <div class="flex items-baseline gap-3 mb-5 pb-2 border-b border-slate-200">
+          <h2 class="font-display text-2xl font-semibold text-slate-900">{month}</h2>
+          <span class="text-sm text-slate-500">{events.length} event{events.length === 1 ? "" : "s"}</span>
+        </div>
+        <ul class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {events.map((evt) => <li><EventCard event={evt} /></li>)}
+        </ul>
+      </div>
+    ))}
+
+    {past.length > 0 && (
+      <div class="mt-16 pt-8 border-t border-slate-200">
+        <h2 class="font-display text-2xl font-semibold mb-1">
+          {isCurrentSeason ? `Past events (${season?.year})` : `Events`}
+        </h2>
+        <p class="text-sm text-slate-500 mb-6">Results live on Scorekeeper.</p>
+        <ul class="divide-y divide-slate-100 bg-white border border-slate-200 rounded-lg overflow-hidden">
+          {past.map((evt) => (
+            <li class="flex items-center gap-4 px-5 py-3 hover:bg-slate-50">
+              <a href={`/events/${evt.slug}`} class="flex-1 min-w-0">
+                <div class="font-medium text-slate-900 truncate">{evt.title}</div>
+                <div class="text-xs text-slate-500">{evt.location_name ?? ""}</div>
+              </a>
+              <div class="text-sm text-slate-500 whitespace-nowrap">{fmtDate(evt.start_at)} · {fmtTime(evt.start_at)}</div>
+              {evt.results_url && (
+                <a href={evt.results_url} target="_blank" rel="noopener" class="text-xs text-brand-700 hover:underline whitespace-nowrap shrink-0">Results →</a>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {otherSeasons.length > 0 && (
+      <div class="mt-16 pt-8 border-t border-slate-200">
+        <h2 class="font-display text-2xl font-semibold mb-3">
+          {isCurrentSeason ? "Past seasons" : "Other seasons"}
+        </h2>
+        <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {otherSeasons.map((s) => {
+            const href = s.id === currentSeason?.id ? "/events" : `/events?season=${s.slug}`;
+            return (
+              <li>
+                <a href={href}
+                  class="block bg-white border border-slate-200 rounded-lg p-4 hover:border-brand-500 hover:shadow-sm transition-all">
+                  <div class="flex items-baseline gap-2 mb-1">
+                    <div class="text-xs uppercase tracking-wider text-brand-700 font-semibold">{s.year}</div>
+                    {s.id === currentSeason?.id && (
+                      <span class="text-[10px] text-emerald-700">current</span>
+                    )}
+                  </div>
+                  <div class="font-semibold text-sm">{s.name}</div>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    )}
+  </section>
+</PublicLayout>

@@ -1,0 +1,31 @@
+# Dependencies & build output
+node_modules/
+dist/
+.astro/
+
+# Cloudflare local state (D1 sqlite, R2 blobs, KV, logs)
+.wrangler/
+
+# Secrets (template at .dev.vars.example is committed)
+.env
+.dev.vars
+
+# Generated TypeScript types for the worker bindings — recreated by `pnpm typegen`
+worker-configuration.d.ts
+
+# Local AI/IDE/MCP state — developer-specific, never share
+.claude/
+.playwright-mcp/
+
+# Photographer + course-map + scorekeeper import SQL is generated from
+# external sources (zip files, the Scorekeeper API, Wix CDN). Skipping
+# from git keeps the repo small and avoids re-applying stale rows.
+# New machines re-run the import scripts.
+seeds/imports/
+
+# Screenshots from scripts/screenshots.mjs and scripts/verify.mjs
+verify-shots/
+
+# Misc
+.DS_Store
+*.log

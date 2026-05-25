@@ -1,0 +1,67 @@
+---
+import MarkdownEditor from "./MarkdownEditor.tsx";
+import type { SeasonRow } from "~/lib/queries";
+
+interface Props { season?: SeasonRow }
+const { season } = Astro.props;
+const isEdit = !!season;
+---
+
+<form method="post" action="/admin/api/seasons/save" class="space-y-5 max-w-2xl">
+  {isEdit && <input type="hidden" name="id" value={season!.id} />}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Year</span>
+      <input type="number" name="year" required min="1900" max="2200"
+        value={season?.year ?? new Date().getUTCFullYear()}
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Slug</span>
+      <input type="text" name="slug" value={season?.slug ?? ""} placeholder="2026"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono" />
+      <p class="text-xs text-slate-400 mt-1">Public URL: <code class="font-mono">/events?season=&lt;slug&gt;</code>.</p>
+    </label>
+
+    <label class="block md:col-span-2">
+      <span class="text-sm font-medium text-slate-700">Name</span>
+      <input type="text" name="name" required value={season?.name ?? ""} placeholder="2026 Season"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </label>
+
+    <label class="block md:col-span-2">
+      <span class="text-sm font-medium text-slate-700">Scorekeeper series</span>
+      <input type="text" name="scorekeeper_series" value={season?.scorekeeper_series ?? ""}
+        placeholder="cscc2026"
+        class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono" />
+      <p class="text-xs text-slate-400 mt-1">
+        The series id used for the admin event-form Quick-fill dropdown.
+        Find it in your Scorekeeper URL: <code class="font-mono">scorekeeper.wwscc.org/results/<strong>cscc2026</strong></code>.
+        Leave blank to fall back to the global setting.
+      </p>
+    </label>
+  </div>
+
+  <MarkdownEditor
+    client:load
+    name="description_md"
+    defaultValue={season?.description_md ?? ""}
+    label="Description (optional)"
+    rows={4}
+  />
+
+  <label class="flex items-center gap-2">
+    <input type="checkbox" name="is_current" checked={season?.is_current === 1} />
+    <span class="text-sm font-medium text-slate-700">Make this the current season</span>
+    <span class="text-xs text-slate-400">(unsets the previous current)</span>
+  </label>
+
+  <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+    <button type="submit" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
+      {isEdit ? "Save changes" : "Create season"}
+    </button>
+    <a href="/admin/seasons" class="text-sm text-slate-500 hover:underline">Cancel</a>
+  </div>
+</form>

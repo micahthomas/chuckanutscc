@@ -1,0 +1,38 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "cscc-website",
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"compatibility_date": "2026-05-25",
+	"compatibility_flags": [
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./dist"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "cscc",
+			"database_id": "905975f2-375e-43d8-91e1-97a407089bc9",
+			"migrations_dir": "./migrations"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "cscc-media"
+		}
+	],
+	"vars": {
+		"PUBLIC_SITE_URL": "http://localhost:4321"
+	}
+	// Secrets (set via `wrangler secret put NAME`):
+	//   STRIPE_SECRET_KEY
+	//   STRIPE_WEBHOOK_SECRET
+	//   RESEND_API_KEY
+	//   GOOGLE_SERVICE_ACCOUNT_JSON
+}

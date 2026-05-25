@@ -1,0 +1,113 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { db, now } from "~/lib/db";
+import { fmtDateTime } from "~/lib/format";
+
+const ts = now();
+const { results: upcoming } = await db(Astro)
+  .prepare(
+    `SELECT id, slug, title, event_type, status, start_at, location_name
+     FROM events
+     WHERE status IN ('scheduled','postponed') AND start_at >= ?
+     ORDER BY start_at ASC`,
+  )
+  .bind(ts)
+  .all<{ id: string; slug: string; title: string; event_type: string; status: string; start_at: number; location_name: string | null }>();
+
+const { results: past } = await db(Astro)
+  .prepare(
+    `SELECT id, slug, title, event_type, status, start_at, location_name
+     FROM events
+     WHERE start_at < ? OR status IN ('completed','cancelled')
+     ORDER BY start_at DESC
+     LIMIT 50`,
+  )
+  .bind(ts)
+  .all<{ id: string; slug: string; title: string; event_type: string; status: string; start_at: number; location_name: string | null }>();
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Events">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Events</h1>
+    <a href="/admin/events/new" class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900">
+      + New event
+    </a>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <h2 class="text-sm uppercase tracking-wide text-slate-500 mb-2">Upcoming</h2>
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden mb-8">
+    {upcoming.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No upcoming events.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Title</th>
+            <th class="px-4 py-2">Date</th>
+            <th class="px-4 py-2">Location</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {upcoming.map((e) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">
+                <a href={`/admin/events/${e.id}`} class="text-brand-700 font-medium hover:underline">{e.title}</a>
+                <div class="text-xs text-slate-400">{e.event_type}</div>
+              </td>
+              <td class="px-4 py-2 whitespace-nowrap">{fmtDateTime(e.start_at)}</td>
+              <td class="px-4 py-2">{e.location_name ?? "—"}</td>
+              <td class="px-4 py-2">
+                <span class={`text-xs px-2 py-0.5 rounded ${e.status === "postponed" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{e.status}</span>
+              </td>
+              <td class="px-4 py-2 text-right">
+                <a href={`/events/${e.slug}`} target="_blank" class="text-xs text-slate-500 hover:underline">View public →</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+
+  <h2 class="text-sm uppercase tracking-wide text-slate-500 mb-2">Past & cancelled</h2>
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    {past.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No past events.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Title</th>
+            <th class="px-4 py-2">Date</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {past.map((e) => (
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">
+                <a href={`/admin/events/${e.id}`} class="text-brand-700 font-medium hover:underline">{e.title}</a>
+              </td>
+              <td class="px-4 py-2 whitespace-nowrap">{fmtDateTime(e.start_at)}</td>
+              <td class="px-4 py-2">
+                <span class={`text-xs px-2 py-0.5 rounded ${e.status === "cancelled" ? "bg-red-100 text-red-800" : "bg-slate-100 text-slate-700"}`}>{e.status}</span>
+              </td>
+              <td class="px-4 py-2 text-right">
+                <a href={`/events/${e.slug}`} target="_blank" class="text-xs text-slate-500 hover:underline">View public →</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

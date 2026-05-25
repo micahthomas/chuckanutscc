@@ -1,0 +1,112 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { db, now } from "~/lib/db";
+import { fmtDate, fmtMoney } from "~/lib/format";
+
+const filter = (Astro.url.searchParams.get("filter") ?? "active") as "active" | "expired" | "all";
+const ts = now();
+const where = filter === "active" ? "WHERE m.expires_at >= ?" : filter === "expired" ? "WHERE m.expires_at < ?" : "";
+const binds: unknown[] = filter === "all" ? [] : [ts];
+
+const { results } = await db(Astro)
+  .prepare(
+    `SELECT m.id, m.name, m.email, m.phone, m.city, m.car_info, m.expires_at,
+            t.name AS tier_name, t.annual_price_cents
+     FROM members m
+     LEFT JOIN membership_tiers t ON t.id = m.tier_id
+     ${where}
+     ORDER BY m.expires_at DESC, m.name ASC`,
+  )
+  .bind(...binds)
+  .all<{
+    id: string; name: string; email: string; phone: string | null; city: string | null;
+    car_info: string | null; expires_at: number | null;
+    tier_name: string | null; annual_price_cents: number | null;
+  }>();
+
+const counts = await db(Astro)
+  .prepare(
+    `SELECT
+       SUM(CASE WHEN expires_at >= ? THEN 1 ELSE 0 END) AS active,
+       SUM(CASE WHEN expires_at < ? THEN 1 ELSE 0 END) AS expired,
+       COUNT(*) AS total
+     FROM members`,
+  )
+  .bind(ts, ts)
+  .first<{ active: number; expired: number; total: number }>();
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Members">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Members</h1>
+    <div class="flex gap-2">
+      <a href={`/admin/api/members/export.csv?filter=${filter}`} class="border border-slate-300 px-3 py-2 rounded text-sm hover:bg-slate-50">
+        Export CSV
+      </a>
+      <a href="/admin/members/new" class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900">
+        + Add member
+      </a>
+    </div>
+  </div>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <div class="flex gap-2 mb-6 text-sm">
+    {(["active", "expired", "all"] as const).map((f) => (
+      <a
+        href={`/admin/members?filter=${f}`}
+        class={`px-3 py-1.5 rounded border ${filter === f ? "bg-brand-700 text-white border-brand-700" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+      >
+        {f} <span class="opacity-70">({f === "active" ? counts?.active : f === "expired" ? counts?.expired : counts?.total})</span>
+      </a>
+    ))}
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    {results.length === 0 ? (
+      <p class="p-4 text-sm text-slate-500">No members in this view.</p>
+    ) : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Tier</th>
+            <th class="px-4 py-2">Expires</th>
+            <th class="px-4 py-2">Car</th>
+          </tr>
+        </thead>
+        <tbody>
+          {results.map((m) => {
+            const expired = m.expires_at != null && m.expires_at < ts;
+            return (
+              <tr class="border-t border-slate-100">
+                <td class="px-4 py-2">
+                  <a href={`/admin/members/${m.id}`} class="text-brand-700 font-medium hover:underline">{m.name}</a>
+                  {m.city && <div class="text-xs text-slate-400">{m.city}</div>}
+                </td>
+                <td class="px-4 py-2 text-slate-500">{m.email}</td>
+                <td class="px-4 py-2">
+                  {m.tier_name ?? "—"}
+                  {m.annual_price_cents && <div class="text-xs text-slate-400">{fmtMoney(m.annual_price_cents)}/yr</div>}
+                </td>
+                <td class="px-4 py-2">
+                  {m.expires_at ? (
+                    <span class={expired ? "text-red-600" : "text-emerald-700"}>
+                      {fmtDate(m.expires_at)}
+                    </span>
+                  ) : <span class="text-slate-400">—</span>}
+                </td>
+                <td class="px-4 py-2 text-slate-500 text-xs">{m.car_info ?? "—"}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

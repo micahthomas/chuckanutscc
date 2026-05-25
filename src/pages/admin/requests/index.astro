@@ -1,0 +1,124 @@
+---
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import { db } from "~/lib/db";
+import { fmtDate } from "~/lib/format";
+
+const status = (Astro.url.searchParams.get("status") ?? "open") as
+  "open" | "in_next_order" | "fulfilled" | "cancelled" | "all";
+const where = status === "all" ? "" : "WHERE r.status = ?";
+const binds: unknown[] = status === "all" ? [] : [status];
+
+interface RequestRow {
+  id: string;
+  requester_name: string;
+  requester_email: string;
+  selections_json: string;
+  quantity: number;
+  notes: string | null;
+  status: string;
+  admin_notes: string | null;
+  created_at: number;
+  item_title: string;
+  item_slug: string;
+}
+
+const { results } = await db(Astro)
+  .prepare(
+    `SELECT r.id, r.requester_name, r.requester_email, r.selections_json, r.quantity,
+            r.notes, r.status, r.admin_notes, r.created_at,
+            i.title AS item_title, i.slug AS item_slug
+     FROM merch_requests r
+     JOIN merch_items i ON i.id = r.item_id
+     ${where}
+     ORDER BY r.created_at DESC`,
+  )
+  .bind(...binds)
+  .all<RequestRow>();
+
+const enriched = results.map((r) => ({
+  ...r,
+  selections: JSON.parse(r.selections_json || "{}") as Record<string, string>,
+}));
+
+const counts = await db(Astro)
+  .prepare(
+    `SELECT
+       SUM(CASE WHEN status='open' THEN 1 ELSE 0 END) AS open,
+       SUM(CASE WHEN status='in_next_order' THEN 1 ELSE 0 END) AS in_next_order,
+       SUM(CASE WHEN status='fulfilled' THEN 1 ELSE 0 END) AS fulfilled,
+       SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) AS cancelled,
+       COUNT(*) AS total
+     FROM merch_requests`,
+  )
+  .first<{ open: number; in_next_order: number; fulfilled: number; cancelled: number; total: number }>();
+
+const STATUSES = ["open", "in_next_order", "fulfilled", "cancelled", "all"] as const;
+
+const flash = Astro.url.searchParams.get("flash");
+---
+
+<AdminLayout title="Merch requests">
+  <h1 class="text-2xl font-semibold mb-6">Merch requests</h1>
+
+  {flash && (
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded p-3 mb-4 text-sm">{flash}</div>
+  )}
+
+  <div class="flex gap-2 mb-6 text-sm flex-wrap">
+    {STATUSES.map((s) => (
+      <a
+        href={`/admin/requests?status=${s}`}
+        class={`px-3 py-1.5 rounded border ${status === s ? "bg-brand-700 text-white border-brand-700" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+      >
+        {s.replace(/_/g, " ")}
+        <span class="opacity-70 ml-1">
+          ({s === "all" ? counts?.total : counts?.[s] ?? 0})
+        </span>
+      </a>
+    ))}
+  </div>
+
+  {enriched.length === 0 ? (
+    <p class="text-slate-500">No requests in this view.</p>
+  ) : (
+    <div class="space-y-3">
+      {enriched.map((r) => (
+        <div class="bg-white border border-slate-200 rounded-lg p-4">
+          <div class="flex items-baseline justify-between gap-4 mb-2">
+            <div>
+              <h3 class="font-semibold">{r.item_title} × {r.quantity}</h3>
+              <p class="text-sm text-slate-500">
+                {r.requester_name} · <a href={`mailto:${r.requester_email}`} class="text-brand-700 hover:underline">{r.requester_email}</a>
+              </p>
+            </div>
+            <span class="text-xs text-slate-400 shrink-0">{fmtDate(r.created_at)}</span>
+          </div>
+
+          {Object.keys(r.selections).length > 0 && (
+            <p class="text-sm text-slate-700 mb-2">
+              {Object.entries(r.selections).map(([k, v]) => (
+                <span class="mr-3"><strong>{k}:</strong> {v}</span>
+              ))}
+            </p>
+          )}
+          {r.notes && <p class="text-sm text-slate-600 italic mb-3">"{r.notes}"</p>}
+
+          <div class="flex gap-2 text-xs">
+            {(["open", "in_next_order", "fulfilled", "cancelled"] as const).map((s) => (
+              <form method="post" action="/admin/api/requests/set-status">
+                <input type="hidden" name="id" value={r.id} />
+                <input type="hidden" name="status" value={s} />
+                <button
+                  class={`px-2 py-1 rounded border ${r.status === s ? "bg-brand-700 text-white border-brand-700" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+                  disabled={r.status === s}
+                >
+                  {s.replace(/_/g, " ")}
+                </button>
+              </form>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</AdminLayout>
