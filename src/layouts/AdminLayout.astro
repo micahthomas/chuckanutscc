@@ -1,5 +1,6 @@
 ---
 import "~/styles/global.css";
+import { isDemoMode } from "~/lib/auth";
 
 interface Props {
   title?: string;
@@ -7,6 +8,7 @@ interface Props {
 
 const { title } = Astro.props;
 const adminEmail = Astro.locals.admin?.email ?? "unknown";
+const demo = isDemoMode();
 ---
 
 <!doctype html>
@@ -44,8 +46,16 @@ const adminEmail = Astro.locals.admin?.email ?? "unknown";
       </div>
     </aside>
 
-    <main class="flex-1 bg-slate-50 p-8 overflow-auto">
-      <slot />
+    <main class="flex-1 bg-slate-50 overflow-auto">
+      {demo && (
+        <div class="bg-amber-100 border-b border-amber-300 text-amber-900 px-6 py-3 text-sm">
+          <strong>Demo mode.</strong> This admin is publicly accessible — anyone visiting <code>/admin</code>
+          can make changes. Edits are real. Cloudflare Access has not been configured yet.
+        </div>
+      )}
+      <div class="p-8">
+        <slot />
+      </div>
     </main>
   </body>
 </html>

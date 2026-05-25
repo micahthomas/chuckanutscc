@@ -28,7 +28,10 @@
 		}
 	],
 	"vars": {
-		"PUBLIC_SITE_URL": "http://localhost:4321"
+		"PUBLIC_SITE_URL": "http://localhost:4321",
+		// Demo mode: any visitor to /admin is treated as this user. Remove this
+		// line and configure Cloudflare Access before going live.
+		"DEMO_ADMIN_EMAIL": "demo@chuckanutscc.org"
 	}
 	// Secrets (set via `wrangler secret put NAME`):
 	//   STRIPE_SECRET_KEY
