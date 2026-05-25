@@ -67,7 +67,10 @@ await runConcurrent(entries, RESIZE_CONCURRENCY, async (filename) => {
     await Promise.all([stat(thumbPath), stat(displayPath)]);
     meta = await sharp(sourcePath, { failOn: "none" }).metadata();
   } catch {
-    const img = sharp(sourcePath, { failOn: "none" });
+    // `.rotate()` (no args) bakes EXIF Orientation into the pixels so the
+    // emitted WebP renders upright — browsers don't honor EXIF on WebP, so
+    // portrait phone shots would otherwise display sideways.
+    const img = sharp(sourcePath, { failOn: "none" }).rotate();
     meta = await img.metadata();
     await img.clone().resize({ width: THUMB_WIDTH }).webp({ quality: 78 }).toFile(thumbPath);
     await img.clone().resize({ width: DISPLAY_WIDTH }).webp({ quality: 82 }).toFile(displayPath);
