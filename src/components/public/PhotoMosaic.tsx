@@ -24,15 +24,67 @@ interface Props {
    * preview a subset but let users browse everything from the lightbox.
    */
   previewLimit?: number;
+  /**
+   * Total number of photos that match the current filter — server-rendered
+   * count, so the lightbox can show "X / total" before later pages load.
+   * When set together with the photo count exceeding `photos.length`, the
+   * component lazy-loads more from `/api/photos` (in batches of `loadStep`).
+   */
+  total?: number;
+  /** Event slug to scope the lazy-load query, or null/undefined for all events. */
+  eventSlug?: string | null;
+  /** Photos per lazy-load request. Defaults to 100. */
+  loadStep?: number;
 }
+
+const PREFETCH_AHEAD = 8; // start loading the next page when within this many of the end
 
 /**
  * CSS-columns mosaic of photo thumbs + a portal-mounted lightbox with
  * keyboard nav (Esc / ← / →) and a thumbnail strip that auto-scrolls to the
  * current photo. Neighbors are preloaded so navigation feels instant.
+ *
+ * When `total > photos.length` is provided, the mosaic shows a "Load more"
+ * button and the lightbox transparently fetches additional pages from
+ * `/api/photos` as the user navigates near the tail.
  */
-export default function PhotoMosaic({ photos, hideEventLabel = false, previewLimit }: Props) {
+export default function PhotoMosaic({
+  photos: initialPhotos,
+  hideEventLabel = false,
+  previewLimit,
+  total,
+  eventSlug,
+  loadStep = 100,
+}: Props) {
+  const [photos, setPhotos] = useState<MosaicPhoto[]>(initialPhotos);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const totalKnown = total ?? initialPhotos.length;
+  const hasMore = photos.length < totalKnown;
+
+  const loadMore = async () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (eventSlug) params.set("event", eventSlug);
+      params.set("offset", String(photos.length));
+      params.set("limit", String(loadStep));
+      const res = await fetch(`/api/photos?${params.toString()}`);
+      if (!res.ok) throw new Error(`photos fetch failed: ${res.status}`);
+      const body = await res.json() as { photos: MosaicPhoto[] };
+      // De-dupe by id in case of overlapping requests.
+      setPhotos((curr) => {
+        const seen = new Set(curr.map((p) => p.id));
+        const fresh = body.photos.filter((p) => !seen.has(p.id));
+        return curr.concat(fresh);
+      });
+    } catch (err) {
+      console.warn("PhotoMosaic loadMore failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (photos.length === 0) {
     return <p className="text-slate-500">No photos yet.</p>;
@@ -66,13 +118,38 @@ export default function PhotoMosaic({ photos, hideEventLabel = false, previewLim
         })}
       </div>
 
+      {!previewLimit && hasMore && (
+        <div className="mt-6 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loading}
+            className="px-5 py-2 rounded border border-slate-300 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Loading…" : `Load more (${photos.length} of ${totalKnown})`}
+          </button>
+        </div>
+      )}
+
+      {!previewLimit && !hasMore && totalKnown > 0 && (
+        <p className="mt-6 text-center text-sm text-slate-500">
+          Showing all {totalKnown} photo{totalKnown === 1 ? "" : "s"}.
+        </p>
+      )}
+
       {openIndex !== null && (
         <Lightbox
           photos={photos}
+          total={totalKnown}
           index={openIndex}
           onClose={() => setOpenIndex(null)}
-          onNav={setOpenIndex}
+          onNav={(i) => {
+            setOpenIndex(i);
+            // Prefetch the next batch when the user navigates near the tail.
+            if (i >= photos.length - PREFETCH_AHEAD && hasMore) loadMore();
+          }}
           hideEventLabel={hideEventLabel}
+          loading={loading}
         />
       )}
     </>
@@ -85,17 +162,21 @@ export default function PhotoMosaic({ photos, hideEventLabel = false, previewLim
 
 interface LightboxProps {
   photos: MosaicPhoto[];
+  total: number;
   index: number;
   onClose: () => void;
   onNav: (idx: number) => void;
   hideEventLabel: boolean;
+  loading: boolean;
 }
 
-function Lightbox({ photos, index, onClose, onNav, hideEventLabel }: LightboxProps) {
+function Lightbox({ photos, total, index, onClose, onNav, hideEventLabel, loading }: LightboxProps) {
   const current = photos[index];
   const stripRef = useRef<HTMLDivElement>(null);
   const activeThumbRef = useRef<HTMLButtonElement>(null);
 
+  // Wrap by what's currently loaded — additional pages append, so wrapping
+  // by photos.length keeps nav consistent even mid-fetch.
   const next = () => onNav((index + 1) % photos.length);
   const prev = () => onNav((index - 1 + photos.length) % photos.length);
 
@@ -161,7 +242,7 @@ function Lightbox({ photos, index, onClose, onNav, hideEventLabel }: LightboxPro
               {current.photographer}
             </a>
             {" · "}
-            <span>{index + 1} / {photos.length}</span>
+            <span>{index + 1} / {total}{loading ? " · loading more…" : ""}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">

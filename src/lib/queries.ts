@@ -403,11 +403,12 @@ export interface RecentPhotoRow {
  */
 export async function loadRecentPhotos(
   ctx: APIContext | AstroGlobal,
-  opts: { limit?: number; eventId?: string | null } = {},
+  opts: { limit?: number; offset?: number; eventId?: string | null } = {},
 ): Promise<RecentPhotoRow[]> {
   const limit = opts.limit ?? 60;
+  const offset = opts.offset ?? 0;
   const where = opts.eventId ? "AND ph.event_id = ?" : "";
-  const binds: unknown[] = opts.eventId ? [opts.eventId, limit] : [limit];
+  const binds: unknown[] = opts.eventId ? [opts.eventId, limit, offset] : [limit, offset];
   const { results } = await db(ctx)
     .prepare(
       `SELECT ph.id, ph.event_id, e.title AS event_title, e.slug AS event_slug,
@@ -419,11 +420,24 @@ export async function loadRecentPhotos(
        JOIN photographers p ON p.id = ph.photographer_id
        WHERE ph.status = 'live' ${where}
        ORDER BY COALESCE(ph.exif_taken_at, ph.drive_uploaded_at) DESC
-       LIMIT ?`,
+       LIMIT ? OFFSET ?`,
     )
     .bind(...binds)
     .all<RecentPhotoRow>();
   return results;
+}
+
+export async function countPhotos(
+  ctx: APIContext | AstroGlobal,
+  opts: { eventId?: string | null } = {},
+): Promise<number> {
+  const where = opts.eventId ? "AND event_id = ?" : "";
+  const binds: unknown[] = opts.eventId ? [opts.eventId] : [];
+  const row = await db(ctx)
+    .prepare(`SELECT COUNT(*) AS c FROM photos WHERE status = 'live' ${where}`)
+    .bind(...binds)
+    .first<{ c: number }>();
+  return row?.c ?? 0;
 }
 
 export interface MembershipTierRow {
@@ -513,6 +527,7 @@ export interface GalleryEventRow {
   slug: string;
   title: string;
   start_at: number;
+  season_year: number | null;
   photo_count: number;
 }
 
@@ -522,9 +537,11 @@ export async function loadGalleryEvents(
   const { results } = await db(ctx)
     .prepare(
       `SELECT e.id, e.slug, e.title, e.start_at,
+              s.year AS season_year,
               COUNT(ph.id) AS photo_count
        FROM events e
        LEFT JOIN photos ph ON ph.event_id = e.id AND ph.status = 'live'
+       LEFT JOIN seasons s ON s.id = e.season_id
        GROUP BY e.id
        HAVING photo_count > 0
        ORDER BY e.start_at DESC`,

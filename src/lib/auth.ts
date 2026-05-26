@@ -18,7 +18,7 @@ export function getAdminEmail(ctx: APIContext): string | null {
   const headerEmail = ctx.request.headers.get(ACCESS_EMAIL_HEADER);
   if (headerEmail) return headerEmail;
 
-  const demoEmail = (env as Record<string, string | undefined>).DEMO_ADMIN_EMAIL;
+  const demoEmail = (env as unknown as Record<string, string | undefined>).DEMO_ADMIN_EMAIL;
   if (demoEmail) return demoEmail;
 
   if (import.meta.env.DEV) return "dev@localhost";
@@ -27,5 +27,5 @@ export function getAdminEmail(ctx: APIContext): string | null {
 }
 
 export function isDemoMode(): boolean {
-  return Boolean((env as Record<string, string | undefined>).DEMO_ADMIN_EMAIL);
+  return Boolean((env as unknown as Record<string, string | undefined>).DEMO_ADMIN_EMAIL);
 }
