@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { resizeToWebP, readExifTakenAt } from "~/lib/client-images";
 
 interface Props {
@@ -6,7 +6,7 @@ interface Props {
   eventId: string;
 }
 
-type ItemStatus = "queued" | "processing" | "uploading" | "done" | "error";
+type ItemStatus = "queued" | "processing" | "uploading" | "done" | "duplicate" | "error";
 
 interface Item {
   id: number;
@@ -20,6 +20,23 @@ const CONCURRENCY = 3;
 const THUMB_MAX = 600;
 const DISPLAY_MAX = 2400;
 const ACCEPTED_EXT = /\.(jpe?g|png|webp|heic|heif|avif)$/i;
+
+/** Map a filename extension to a MIME type. ZIP entries arrive as blobs
+ * with `type === ""` because zip.js's BlobWriter doesn't sniff, so we
+ * resolve content-type from the filename ourselves. */
+function inferType(filename: string, fallback: string): string {
+  const m = filename.toLowerCase().match(/\.([a-z0-9]+)$/);
+  switch (m?.[1]) {
+    case "jpg":
+    case "jpeg": return "image/jpeg";
+    case "png":  return "image/png";
+    case "webp": return "image/webp";
+    case "heic": return "image/heic";
+    case "heif": return "image/heif";
+    case "avif": return "image/avif";
+    default:     return fallback;
+  }
+}
 
 /**
  * Photographer-facing uploader. Accepts drag-drop, multi-select file picker,
@@ -86,10 +103,11 @@ export default function PhotographerUploader({ token, eventId }: Props) {
 
     updateItem(job.id, { status: "uploading" });
 
+    const fullType = inferType(job.name, blob.type || "application/octet-stream");
     const body = new FormData();
     body.set("thumb",   new File([thumbBlob],   "thumb.webp",   { type: "image/webp" }));
     body.set("display", new File([displayBlob], "display.webp", { type: "image/webp" }));
-    body.set("full",    new File([blob], job.name, { type: blob.type || "application/octet-stream" }));
+    body.set("full",    new File([blob], job.name, { type: fullType }));
     body.set("filename", job.name);
     if (width > 0)  body.set("width",  String(width));
     if (height > 0) body.set("height", String(height));
@@ -100,7 +118,8 @@ export default function PhotographerUploader({ token, eventId }: Props) {
       const j = (await res.json().catch(() => null)) as { error?: string } | null;
       throw new Error(j?.error ?? `Upload failed (${res.status})`);
     }
-    updateItem(job.id, { status: "done" });
+    const j = (await res.json().catch(() => null)) as { deduped?: boolean } | null;
+    updateItem(job.id, { status: j?.deduped ? "duplicate" : "done" });
   }
 
   async function handleFiles(files: File[]) {
@@ -169,7 +188,25 @@ export default function PhotographerUploader({ token, eventId }: Props) {
 
   const inFlight = items.some((i) => i.status === "queued" || i.status === "processing" || i.status === "uploading");
   const doneCount = items.filter((i) => i.status === "done").length;
+  const duplicateCount = items.filter((i) => i.status === "duplicate").length;
   const errorCount = items.filter((i) => i.status === "error").length;
+
+  // Keep the active row visible. Scroll target priority:
+  //   first uploading -> first processing -> first queued -> last item.
+  // `block: "nearest"` only scrolls when the row isn't already in view, so a
+  // user reading earlier rows isn't yanked around unless the work boundary
+  // moves off-screen.
+  const listRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || items.length === 0) return;
+    let targetIdx = items.findIndex((i) => i.status === "uploading");
+    if (targetIdx === -1) targetIdx = items.findIndex((i) => i.status === "processing");
+    if (targetIdx === -1) targetIdx = items.findIndex((i) => i.status === "queued");
+    if (targetIdx === -1) targetIdx = items.length - 1;
+    const child = list.children[targetIdx] as HTMLElement | undefined;
+    child?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [items]);
 
   return (
     <div>
@@ -214,6 +251,7 @@ export default function PhotographerUploader({ token, eventId }: Props) {
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-slate-700">
               {doneCount} of {items.length} uploaded
+              {duplicateCount > 0 && <span className="text-amber-700"> · {duplicateCount} duplicate</span>}
               {errorCount > 0 && <span className="text-red-600"> · {errorCount} failed</span>}
             </span>
             {!inFlight && (
@@ -230,7 +268,10 @@ export default function PhotographerUploader({ token, eventId }: Props) {
               </button>
             )}
           </div>
-          <ul className="max-h-64 overflow-auto border border-slate-200 rounded bg-white divide-y divide-slate-100 text-sm">
+          <ul
+            ref={listRef}
+            className="max-h-64 overflow-auto border border-slate-200 rounded bg-white divide-y divide-slate-100 text-sm"
+          >
             {items.map((it) => (
               <li key={it.id} className="flex items-center justify-between gap-3 px-3 py-2">
                 <span className="truncate flex-1 text-slate-700">{it.name}</span>
@@ -239,6 +280,7 @@ export default function PhotographerUploader({ token, eventId }: Props) {
                   {it.status === "processing" && <span className="text-slate-500">resizing…</span>}
                   {it.status === "uploading" && <span className="text-blue-600">uploading…</span>}
                   {it.status === "done" && <span className="text-emerald-700">✓ uploaded</span>}
+                  {it.status === "duplicate" && <span className="text-amber-700">↺ already uploaded</span>}
                   {it.status === "error" && (
                     <span className="text-red-600" title={it.error}>✗ {it.error?.slice(0, 40)}</span>
                   )}
