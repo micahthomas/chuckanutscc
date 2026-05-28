@@ -1,0 +1,109 @@
+---
+/**
+ * Shared hero band for every editorial page. Driven entirely by props so the
+ * same component renders the simple About-page hero ("eyebrow + title +
+ * subtitle") and the rich Autocross-page hero (checklist + CTAs + photo with
+ * stat overlay).
+ *
+ * Decisions:
+ * - Photo overlay only renders when both heroImageKey and stat fields are
+ *   set. Pages without a hero photo collapse to a single-column hero.
+ * - CTAs render at most two visually-distinct styles: the first item's
+ *   `primary: true` flag controls the orange/outline split; everything else
+ *   inherits from there. Authors who want >2 styles should design a separate
+ *   section instead.
+ */
+
+export interface HeroCta {
+  label: string;
+  href: string;
+  primary?: boolean;
+}
+
+interface Props {
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+  items?: string[];
+  ctas?: HeroCta[];
+  heroImageKey?: string | null;
+  statValue?: string;
+  statLabel?: string;
+}
+
+const {
+  eyebrow,
+  title,
+  subtitle,
+  items = [],
+  ctas = [],
+  heroImageKey,
+  statValue,
+  statLabel,
+} = Astro.props;
+
+const showPhoto = Boolean(heroImageKey);
+const showStat = Boolean(statValue && statLabel);
+const twoColumn = showPhoto || items.length > 0 || ctas.length > 1;
+---
+
+<section class="bg-zinc-900 border-b border-zinc-800 print:bg-white print:border-none">
+  <div class={`max-w-5xl mx-auto px-4 py-12 ${twoColumn ? "grid gap-10 lg:grid-cols-2 lg:gap-16 items-center" : ""}`}>
+    <div>
+      {eyebrow && (
+        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3 print:hidden">
+          {eyebrow}
+        </div>
+      )}
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3 print:text-black print:text-3xl">
+        {title}
+      </h1>
+      {subtitle && (
+        <p class="text-zinc-300 leading-relaxed mb-6 print:text-black max-w-2xl">{subtitle}</p>
+      )}
+
+      {items.length > 0 && (
+        <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-3 mb-8 print:hidden">
+          {items.map((item) => (
+            <li class="flex items-start gap-2 text-sm text-zinc-300">
+              <span class="text-brand-500 mt-0.5 shrink-0" aria-hidden="true">✓</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {ctas.length > 0 && (
+        <div class="flex flex-wrap gap-3 print:hidden">
+          {ctas.map((cta) => (
+            <a
+              href={cta.href}
+              class={cta.primary
+                ? "bg-brand-700 text-white px-5 py-2.5 rounded font-medium hover:bg-brand-900 transition-colors"
+                : "border border-zinc-700 text-zinc-100 px-5 py-2.5 rounded font-medium hover:bg-zinc-900 transition-colors"}
+            >
+              {cta.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+
+    {showPhoto && (
+      <div class="relative print:hidden">
+        <img
+          src={`/media/${heroImageKey}`}
+          alt=""
+          class="w-full aspect-[4/3] object-cover rounded-lg border border-zinc-800"
+          loading="lazy"
+        />
+        {showStat && (
+          <div class="absolute right-4 bottom-4 sm:right-6 sm:bottom-6 bg-zinc-950 border border-zinc-800 rounded p-4 shadow-xl max-w-[15rem]">
+            <div class="font-display text-3xl font-bold text-brand-500">{statValue}</div>
+            <div class="text-xs text-zinc-400 mt-1 leading-snug">{statLabel}</div>
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</section>

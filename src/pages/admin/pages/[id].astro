@@ -6,7 +6,9 @@ import { db } from "~/lib/db";
 const id = Astro.params.id!;
 const page = await db(Astro)
   .prepare(
-    `SELECT id, slug, title, body_md, show_in_nav, nav_order, seo_title, seo_description
+    `SELECT id, slug, title, body_md, show_in_nav, nav_order, seo_title, seo_description,
+            eyebrow, subtitle, hero_image_key, hero_stat_value, hero_stat_label,
+            hero_items_json, hero_ctas_json, show_toc, show_print
      FROM pages WHERE id = ?`,
   )
   .bind(id)

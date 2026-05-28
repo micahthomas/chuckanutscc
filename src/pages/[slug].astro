@@ -1,7 +1,8 @@
 ---
 import PublicLayout from "~/layouts/PublicLayout.astro";
+import CmsPage from "~/components/public/CmsPage.astro";
+import type { HeroCta } from "~/components/public/PageHero.astro";
 import { loadPageBySlug } from "~/lib/queries";
-import { renderMarkdown } from "~/lib/markdown";
 
 const slug = Astro.params.slug!;
 const page = await loadPageBySlug(Astro, slug);
@@ -10,27 +11,53 @@ if (!page) {
   return new Response("Not found", { status: 404 });
 }
 
-// The hub header surfaces the page title, so strip a leading `# Title` from
-// the body to avoid rendering it twice.
-const body = page.body_md.replace(/^#\s+.*\n+/, "");
-const html = renderMarkdown(body);
+function parseStringArray(json: string): string[] {
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === "string") : [];
+  } catch {
+    return [];
+  }
+}
+function parseCtas(json: string): HeroCta[] {
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (c): c is HeroCta =>
+        c && typeof c === "object" && typeof c.label === "string" && typeof c.href === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+const items = parseStringArray(page.hero_items_json);
+const ctas = parseCtas(page.hero_ctas_json);
+
+// Eyebrow defaults to "Club" for simple pages with nothing else in the hero,
+// so they don't lose the small label the previous one-off template had. Rich
+// pages (autocross, rules) set their own eyebrow.
+const fallbackEyebrow = !page.eyebrow && !items.length && !ctas.length && !page.hero_image_key
+  ? "Club"
+  : page.eyebrow;
 ---
 
 <PublicLayout
   title={page.seo_title ?? page.title}
-  description={page.seo_description ?? undefined}
+  description={page.seo_description ?? page.subtitle ?? undefined}
 >
-  <section class="border-b border-zinc-800 bg-zinc-900">
-    <div class="max-w-5xl mx-auto px-4 py-12">
-      <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3">Club</div>
-      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">{page.title}</h1>
-      {page.seo_description && (
-        <p class="text-zinc-400 max-w-2xl">{page.seo_description}</p>
-      )}
-    </div>
-  </section>
-
-  <article class="max-w-3xl mx-auto px-4 py-12">
-    <div class="prose max-w-none" set:html={html} />
-  </article>
+  <CmsPage
+    title={page.title}
+    eyebrow={fallbackEyebrow || undefined}
+    subtitle={page.subtitle || undefined}
+    bodyMd={page.body_md}
+    items={items}
+    ctas={ctas}
+    heroImageKey={page.hero_image_key}
+    statValue={page.hero_stat_value || undefined}
+    statLabel={page.hero_stat_label || undefined}
+    showToc={page.show_toc === 1}
+    showPrint={page.show_print === 1}
+  />
 </PublicLayout>

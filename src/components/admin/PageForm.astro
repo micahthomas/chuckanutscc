@@ -11,11 +11,46 @@ interface Props {
     nav_order: number;
     seo_title: string | null;
     seo_description: string | null;
+    eyebrow: string;
+    subtitle: string;
+    hero_image_key: string | null;
+    hero_stat_value: string;
+    hero_stat_label: string;
+    hero_items_json: string;
+    hero_ctas_json: string;
+    show_toc: number;
+    show_print: number;
   };
 }
 
 const { page } = Astro.props;
 const isEdit = !!page;
+
+// Render the JSON arrays as one-per-line for an easier textarea editing
+// experience. The save handler reverses this back to JSON.
+function jsonItemsToLines(json: string | undefined): string {
+  if (!json) return "";
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return "";
+    return parsed.filter((s) => typeof s === "string").join("\n");
+  } catch {
+    return "";
+  }
+}
+function jsonCtasToLines(json: string | undefined): string {
+  if (!json) return "";
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return "";
+    return parsed
+      .filter((c) => c && typeof c === "object")
+      .map((c) => `${c.primary ? "*" : "-"} ${c.label} | ${c.href}`)
+      .join("\n");
+  } catch {
+    return "";
+  }
+}
 ---
 
 <form method="post" action="/admin/api/pages/save" class="space-y-5 max-w-3xl">
@@ -45,14 +80,73 @@ const isEdit = !!page;
     </label>
   </div>
 
+  <fieldset class="border border-slate-200 rounded p-4">
+    <legend class="text-sm font-medium text-slate-700 px-2">Hero</legend>
+    <div class="grid grid-cols-1 gap-3 mt-1">
+      <label class="block">
+        <span class="text-xs text-slate-500">Eyebrow (small label above the title — e.g. "Club", "About Autocross")</span>
+        <input type="text" name="eyebrow" value={page?.eyebrow ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      </label>
+      <label class="block">
+        <span class="text-xs text-slate-500">Subtitle (one paragraph under the title)</span>
+        <textarea name="subtitle" rows="3"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm">{page?.subtitle ?? ""}</textarea>
+      </label>
+      <label class="block">
+        <span class="text-xs text-slate-500">Hero image (R2 key, e.g. <code>about/photo-1.jpg</code>) — optional</span>
+        <input type="text" name="hero_image_key" value={page?.hero_image_key ?? ""}
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono" />
+      </label>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="block">
+          <span class="text-xs text-slate-500">Stat overlay value (e.g. <code>70+</code>) — optional</span>
+          <input type="text" name="hero_stat_value" value={page?.hero_stat_value ?? ""}
+            class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-slate-500">Stat overlay label</span>
+          <input type="text" name="hero_stat_label" value={page?.hero_stat_label ?? ""}
+            class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+        </label>
+      </div>
+      <label class="block">
+        <span class="text-xs text-slate-500">Checklist items (one per line; rendered with ✓)</span>
+        <textarea name="hero_items_lines" rows="4" placeholder="Any car welcome — yes, even your daily driver&#10;Loaner helmets for newcomers"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono">{jsonItemsToLines(page?.hero_items_json)}</textarea>
+      </label>
+      <label class="block">
+        <span class="text-xs text-slate-500">
+          CTA buttons (one per line as <code>* Label | /url</code> for the primary orange button, or <code>- Label | /url</code> for the outline style)
+        </span>
+        <textarea name="hero_ctas_lines" rows="3" placeholder="* Come to your first event | /events&#10;- Become a member | /membership"
+          class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono">{jsonCtasToLines(page?.hero_ctas_json)}</textarea>
+      </label>
+    </div>
+  </fieldset>
+
   <MarkdownEditor
     client:only="react"
     name="body_md"
     defaultValue={page?.body_md ?? ""}
     label="Body"
-    hint="Use the toolbar or type Markdown directly. Preview updates as you type."
+    hint="Use the toolbar or type Markdown directly. Preview updates as you type. H2 headings (`## …`) become TOC entries when the table-of-contents toggle is on."
     rows={20}
   />
+
+  <fieldset class="border border-slate-200 rounded p-4">
+    <legend class="text-sm font-medium text-slate-700 px-2">Page features</legend>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <label class="flex items-center gap-2">
+        <input type="checkbox" name="show_toc" checked={page?.show_toc === 1} />
+        <span class="text-sm text-slate-700">Sticky table of contents (from H2s)</span>
+      </label>
+      <label class="flex items-center gap-2">
+        <input type="checkbox" name="show_print" checked={page?.show_print === 1} />
+        <span class="text-sm text-slate-700">"Print or save as PDF" button</span>
+      </label>
+    </div>
+  </fieldset>
 
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     <label class="flex items-center gap-2 mt-6">

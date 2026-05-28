@@ -58,9 +58,11 @@ const flash = Astro.url.searchParams.get("flash");
       </label>
 
       <label class="block mt-3">
-        <span class="text-xs text-slate-500">Season rules PDF (linked from the events page)</span>
-        <input type="url" name="season_rules_url" value={settings.season_rules_url ?? ""}
-          placeholder="https://..."
+        <span class="text-xs text-slate-500">
+          Season rules link (linked from the events page). Use <code>/autocross-rules</code> for the on-site rulebook, or paste a full URL if you'd rather link out to a PDF.
+        </span>
+        <input type="text" name="season_rules_url" value={settings.season_rules_url ?? ""}
+          placeholder="/autocross-rules"
           class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
       </label>
     </fieldset>

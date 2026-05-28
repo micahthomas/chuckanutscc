@@ -257,6 +257,17 @@ export interface PageRow {
   seo_title: string | null;
   seo_description: string | null;
   updated_at: number;
+  // Hero chrome — see migration 0008. Empty strings mean "render no eyebrow,
+  // no subtitle"; the JSON fields parse to [] when blank.
+  eyebrow: string;
+  subtitle: string;
+  hero_image_key: string | null;
+  hero_stat_value: string;
+  hero_stat_label: string;
+  hero_items_json: string;
+  hero_ctas_json: string;
+  show_toc: number;
+  show_print: number;
 }
 
 export interface HomePageRow {
@@ -289,7 +300,9 @@ export async function loadPageBySlug(
   return await db(ctx)
     .prepare(
       `SELECT id, slug, title, body_md, show_in_nav, nav_order,
-              seo_title, seo_description, updated_at
+              seo_title, seo_description, updated_at,
+              eyebrow, subtitle, hero_image_key, hero_stat_value, hero_stat_label,
+              hero_items_json, hero_ctas_json, show_toc, show_print
        FROM pages WHERE slug = ?`,
     )
     .bind(slug)

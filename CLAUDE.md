@@ -103,6 +103,40 @@ pnpm wrangler r2 object list cscc-media --local | head
 - **Timestamps** are Unix seconds (INTEGER) throughout. Convert ms → s with `Math.floor(Date.now() / 1000)` (helper: `now()` in `src/lib/db.ts`).
 - **Don't add `console.log`** in shipped code. Errors that matter should surface through the admin email log or a 4xx/5xx response with context.
 
+## Content page architecture (read before adding a new page)
+
+Every editorial "title + markdown body" page on the public site goes through one shared component pipeline. **Do not create a one-off `.astro` route with a hand-rolled hero**, even if the page has a slightly different look — extend the shared component or add a knob to the `pages` table instead.
+
+The flow:
+
+```
+pages table (D1)
+  └─ src/pages/[slug].astro
+       └─ src/components/public/CmsPage.astro      ← hero + body + optional TOC + print
+            └─ src/components/public/PageHero.astro ← eyebrow / title / subtitle / items / CTAs / photo+stat
+```
+
+Hero, TOC, and print-button behavior are all **driven by columns on `pages`** (added in migration `0008`):
+
+| column            | what it controls                                                                                  |
+|-------------------|---------------------------------------------------------------------------------------------------|
+| `eyebrow`         | Small uppercase label above the title (e.g. `Rulebook`, `About Autocross`). Empty → no eyebrow.   |
+| `subtitle`        | One paragraph under the title.                                                                    |
+| `hero_image_key`  | R2 key for the side photo. Empty → single-column hero.                                            |
+| `hero_stat_value` + `hero_stat_label` | Overlay card on the hero photo (e.g. "70+ Years racing…").                    |
+| `hero_items_json` | JSON array of strings → ✓ checklist in the hero.                                                  |
+| `hero_ctas_json`  | JSON array of `{label, href, primary?}` → buttons in the hero.                                    |
+| `show_toc`        | `1` → sticky TOC sidebar built from `## H2` headings. Auto-injects anchor IDs.                    |
+| `show_print`      | `1` → "Print or save as PDF" button + print stylesheet (clean black-on-white, hides nav/footer/TOC). |
+
+Admin edits live at `/admin/pages/<id>` (`PageForm.astro`). The CTAs textarea uses a shorthand — `* Label | /url` for primary, `- Label | /url` for outline — that `save.ts` parses back to JSON.
+
+**When to deviate:**
+- **Functional pages** (events listing, gallery, membership checkout) keep their own route file but use `<PageHero>` for the hero band — see `/membership.astro` for the pattern. Don't re-implement the hero markup.
+- **Per-URL wrappers** are allowed *only* when the URL nesting matters and isn't expressible as a single slug; the wrapper must delegate to `<CmsPage>`, not re-render the chrome.
+
+The TOC auto-injects IDs onto every `<h2>` and `<h3>` and collects `<h2>`s into the sidebar — see `renderMarkdownWithToc` in `src/lib/markdown.ts`. Heading IDs are slugified from the visible text; duplicates get `-2`, `-3`, etc. suffixed.
+
 ## Architecture map
 
 ```

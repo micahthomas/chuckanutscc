@@ -11,9 +11,43 @@ interface Props {
 const { title, description } = Astro.props;
 const pageTitle = title ? `${title} — Chuckanut Sports Car Club` : "Chuckanut Sports Car Club";
 
-const { results: navPages } = await db(Astro)
-  .prepare(`SELECT slug, title FROM pages WHERE show_in_nav = 1 ORDER BY nav_order ASC, title ASC`)
-  .all<{ slug: string; title: string }>();
+// Top nav is a fixed five-link list, kept short on purpose. Secondary pages
+// (Locations, Shop, Contact, Photographers, etc.) live in the footer sitemap.
+const primaryNav: Array<{ href: string; label: string }> = [
+  { href: "/events",          label: "Events" },
+  { href: "/autocross",       label: "Autocross" },
+  { href: "/membership",      label: "Membership" },
+  { href: "/gallery",         label: "Gallery" },
+  { href: "/about",           label: "About" },
+];
+
+// Grouped footer "sitemap" — sections + label/href tuples, easy to extend.
+const footerColumns: Array<{ heading: string; links: Array<{ href: string; label: string }> }> = [
+  {
+    heading: "Get involved",
+    links: [
+      { href: "/events",            label: "Events" },
+      { href: "/membership",        label: "Membership" },
+      { href: "/autocross",         label: "Autocross intro" },
+      { href: "/autocross-rules",   label: "Autocross rules" },
+    ],
+  },
+  {
+    heading: "Club",
+    links: [
+      { href: "/about",             label: "About" },
+      { href: "/locations",         label: "Locations" },
+      { href: "/gallery",           label: "Gallery" },
+      { href: "/shop",              label: "Shop" },
+    ],
+  },
+  {
+    heading: "Connect",
+    links: [
+      { href: "/contact",           label: "Contact" },
+    ],
+  },
+];
 
 const { results: settingsRows } = await db(Astro)
   .prepare(`SELECT key, value FROM settings WHERE key IN ('logo_key', 'social_instagram_url', 'social_facebook_url')`)
@@ -48,17 +82,11 @@ const flash = Astro.url.searchParams.get("flash");
           <span class="truncate">Chuckanut Sports Car Club</span>
         </a>
 
-        {/* Desktop nav (md+) */}
+        {/* Desktop nav (md+) — five primary links; rest live in the footer. */}
         <nav class="hidden md:flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <a href="/events" class="hover:text-brand-500">Events</a>
-          <a href="/locations" class="hover:text-brand-500">Locations</a>
-          <a href="/membership" class="hover:text-brand-500">Membership</a>
-          <a href="/shop" class="hover:text-brand-500">Shop</a>
-          <a href="/gallery" class="hover:text-brand-500">Gallery</a>
-          {navPages.map((p) => (
-            <a href={`/${p.slug}`} class="hover:text-brand-500">{p.title}</a>
+          {primaryNav.map((item) => (
+            <a href={item.href} class="hover:text-brand-500">{item.label}</a>
           ))}
-          <a href="/contact" class="hover:text-brand-500">Contact</a>
         </nav>
 
         {/* Mobile hamburger toggle (under md) */}
@@ -80,15 +108,9 @@ const flash = Astro.url.searchParams.get("flash");
         id="mobile-nav"
         class="md:hidden hidden flex-col px-2 pb-3 text-base border-t border-zinc-800"
       >
-        <a href="/events"     class="block px-3 py-3 rounded hover:bg-zinc-800">Events</a>
-        <a href="/locations"  class="block px-3 py-3 rounded hover:bg-zinc-800">Locations</a>
-        <a href="/membership" class="block px-3 py-3 rounded hover:bg-zinc-800">Membership</a>
-        <a href="/shop"       class="block px-3 py-3 rounded hover:bg-zinc-800">Shop</a>
-        <a href="/gallery"    class="block px-3 py-3 rounded hover:bg-zinc-800">Gallery</a>
-        {navPages.map((p) => (
-          <a href={`/${p.slug}`} class="block px-3 py-3 rounded hover:bg-zinc-800">{p.title}</a>
+        {primaryNav.map((item) => (
+          <a href={item.href} class="block px-3 py-3 rounded hover:bg-zinc-800">{item.label}</a>
         ))}
-        <a href="/contact"    class="block px-3 py-3 rounded hover:bg-zinc-800">Contact</a>
       </nav>
     </header>
 
@@ -121,46 +143,63 @@ const flash = Astro.url.searchParams.get("flash");
       <slot />
     </main>
 
-    <footer class="border-t border-zinc-800 mt-16">
-      <div class="max-w-6xl mx-auto px-4 py-8 text-sm text-zinc-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span>&copy; {new Date().getFullYear()} Chuckanut Sports Car Club &middot; Bellingham, WA</span>
-          {(instagramUrl || facebookUrl) && (
-            <span class="flex items-center gap-1 -my-2">
-              {instagramUrl && (
-                <a href={instagramUrl} target="_blank" rel="noopener" aria-label="Instagram"
-                  class="inline-flex items-center justify-center w-11 h-11 text-zinc-500 hover:text-brand-700 hover:bg-zinc-800 rounded transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                  </svg>
-                </a>
+    <footer class="border-t border-zinc-800 mt-16 print:hidden">
+      <div class="max-w-6xl mx-auto px-4 py-12">
+        <div class="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+          <div class="md:col-span-1">
+            <div class="flex items-center gap-2 mb-3">
+              {logoKey && <img src={`/media/${logoKey}`} alt="" class="w-8 h-8" />}
+              <span class="font-display text-base font-semibold text-brand-700">CSCC</span>
+            </div>
+            <p class="text-sm text-zinc-400 leading-relaxed">
+              Chuckanut Sports Car Club &mdash; Bellingham, WA. Founded 1956. Autocross, rallies, tours, and social events.
+            </p>
+          </div>
+
+          {footerColumns.map((col) => (
+            <div>
+              <h3 class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 mb-3">
+                {col.heading}
+              </h3>
+              <ul class="space-y-2 text-sm">
+                {col.links.map((link) => (
+                  <li>
+                    <a href={link.href} class="text-zinc-300 hover:text-brand-500">{link.label}</a>
+                  </li>
+                ))}
+              </ul>
+              {col.heading === "Connect" && (instagramUrl || facebookUrl) && (
+                <div class="flex items-center gap-1 mt-3 -ml-2">
+                  {instagramUrl && (
+                    <a href={instagramUrl} target="_blank" rel="noopener" aria-label="Instagram"
+                      class="inline-flex items-center justify-center w-10 h-10 text-zinc-500 hover:text-brand-700 hover:bg-zinc-800 rounded transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                      </svg>
+                    </a>
+                  )}
+                  {facebookUrl && (
+                    <a href={facebookUrl} target="_blank" rel="noopener" aria-label="Facebook"
+                      class="inline-flex items-center justify-center w-10 h-10 text-zinc-500 hover:text-brand-700 hover:bg-zinc-800 rounded transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                      </svg>
+                    </a>
+                  )}
+                </div>
               )}
-              {facebookUrl && (
-                <a href={facebookUrl} target="_blank" rel="noopener" aria-label="Facebook"
-                  class="inline-flex items-center justify-center w-11 h-11 text-zinc-500 hover:text-brand-700 hover:bg-zinc-800 rounded transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-                  </svg>
-                </a>
-              )}
-            </span>
-          )}
+            </div>
+          ))}
         </div>
-        <form method="post" action="/api/newsletter/subscribe" class="flex gap-2 w-full sm:w-auto">
-          <input
-            type="email"
-            name="email"
-            required
-            placeholder="Newsletter email"
-            class="flex-1 sm:flex-initial border border-zinc-700 rounded px-3 py-2 text-sm min-h-[40px]"
-          />
-          <button type="submit"
-            class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900 min-h-[40px] shrink-0">
-            Subscribe
-          </button>
-        </form>
+
+        <div class="border-t border-zinc-800 mt-10 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-zinc-500">
+          <span>&copy; {new Date().getFullYear()} Chuckanut Sports Car Club &middot; Bellingham, WA</span>
+          <span>
+            <a href="https://www.chuckanutscc.org" class="hover:text-brand-500">chuckanutscc.org</a>
+          </span>
+        </div>
       </div>
     </footer>
   </body>

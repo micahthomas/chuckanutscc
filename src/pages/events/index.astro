@@ -52,7 +52,7 @@ const descHtml = season?.description_md ? renderMarkdown(season.description_md) 
 const resources = [
   { icon: "📖", title: "New to autocross?", desc: "What it is, what to bring, helmet rules, and what to expect on event day.", href: "/autocross", cta: "Read the guide →", external: false },
   { icon: "🏁", title: "How to register",  desc: "Sign up for any event on Scorekeeper. You'll need CSCC membership or pay $10 at the event for a temp.", href: registerUrl, cta: "Open Scorekeeper →", external: true },
-  ...(seasonRulesUrl ? [{ icon: "📋", title: `${season?.year ?? new Date().getUTCFullYear()} season rules`, desc: "Class structure, scoring, championship eligibility, and event-day procedures.", href: seasonRulesUrl, cta: "Open PDF →", external: true }] : []),
+  ...(seasonRulesUrl ? [{ icon: "📋", title: `${season?.year ?? new Date().getUTCFullYear()} season rules`, desc: "Class structure, scoring, championship eligibility, and event-day procedures.", href: seasonRulesUrl, cta: seasonRulesUrl.startsWith("/") ? "Read the rules →" : "Open PDF →", external: !seasonRulesUrl.startsWith("/") }] : []),
   { icon: "🎟️", title: "Become a member", desc: "Full-season membership unlocks reduced entry fees and supports the club.", href: "/membership", cta: "Join CSCC →", external: false },
 ];
 
