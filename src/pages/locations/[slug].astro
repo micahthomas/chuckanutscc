@@ -29,45 +29,87 @@ const hasCoords = loc.latitude !== null && loc.longitude !== null;
 ---
 
 <PublicLayout title={loc.name} description={loc.address ?? undefined}>
-  <article class="max-w-3xl mx-auto px-4 py-12">
-    <a href="/locations" class="text-sm text-zinc-400 hover:text-zinc-200">← All locations</a>
-    <h1 class="font-display text-3xl sm:text-4xl font-bold mt-4 mb-3">{loc.name}</h1>
-    {loc.address && (
-      <p class="text-zinc-400 mb-1">📍 {loc.address}</p>
-    )}
-    {hasCoords && (
-      <p class="text-xs text-zinc-500 font-mono mb-6">
-        {loc.latitude!.toFixed(4)}, {loc.longitude!.toFixed(4)}
-      </p>
-    )}
-
-    {hasCoords && (
-      <div class="flex gap-3 mb-8 flex-wrap">
-        <a
-          href={googleMapsDirectionsUrl(loc.latitude!, loc.longitude!, loc.name)}
-          target="_blank" rel="noopener"
-          class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900"
-        >
-          Get directions →
-        </a>
-        <a
-          href={googleMapsPinUrl(loc.latitude!, loc.longitude!)}
-          target="_blank" rel="noopener"
-          class="border border-zinc-700 text-zinc-100 px-5 py-2 rounded font-medium hover:bg-zinc-900"
-        >
-          Open in Google Maps
-        </a>
+  <section class="border-b border-zinc-800 bg-zinc-900">
+    <div class="max-w-5xl mx-auto px-4 py-12">
+      <a href="/locations" class="text-sm text-zinc-400 hover:text-zinc-200">← All locations</a>
+      <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mt-4 mb-3">Venue</div>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">{loc.name}</h1>
+      <div class="flex flex-wrap gap-x-6 gap-y-1 text-zinc-400">
+        {loc.address && <span>📍 {loc.address}</span>}
+        {hasCoords && (
+          <span class="font-mono text-xs self-center">
+            {loc.latitude!.toFixed(4)}, {loc.longitude!.toFixed(4)}
+          </span>
+        )}
       </div>
-    )}
 
-    {descHtml && (
-      <div class="prose max-w-none mb-10" set:html={descHtml} />
-    )}
+      {hasCoords && (
+        <div class="flex gap-3 mt-8 flex-wrap">
+          <a
+            href={googleMapsDirectionsUrl(loc.latitude!, loc.longitude!, loc.name)}
+            target="_blank" rel="noopener"
+            class="bg-brand-700 text-white px-5 py-2.5 rounded font-medium hover:bg-brand-900"
+          >
+            Get directions →
+          </a>
+          <a
+            href={googleMapsPinUrl(loc.latitude!, loc.longitude!)}
+            target="_blank" rel="noopener"
+            class="border border-zinc-700 text-zinc-100 px-5 py-2.5 rounded font-medium hover:bg-zinc-800"
+          >
+            Open in Google Maps
+          </a>
+        </div>
+      )}
+    </div>
+  </section>
 
-    {hasCoords && (
-      <div class="mb-10">
+  {loc.map_image_key && (
+    <div class="max-w-5xl mx-auto px-4 pt-12">
+      <img
+        src={`/media/${loc.map_image_key}`}
+        alt={`${loc.name} venue map`}
+        class="w-full aspect-[21/9] object-cover rounded-lg border border-zinc-800"
+      />
+    </div>
+  )}
+
+  <article class="max-w-5xl mx-auto px-4 py-12 grid gap-10 md:grid-cols-3">
+    <div class="md:col-span-2 space-y-10">
+      {descHtml && (
+        <div class="prose max-w-none" set:html={descHtml} />
+      )}
+
+      {directionsHtml && (
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-3">Getting there</h2>
+          <div class="prose max-w-none" set:html={directionsHtml} />
+        </div>
+      )}
+    </div>
+
+    <aside class="md:col-span-1 space-y-6">
+      {upcomingHere.length > 0 && (
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm">
+          <h3 class="font-semibold mb-3 text-xs uppercase tracking-wide text-zinc-400">Upcoming events here</h3>
+          <ul class="space-y-2">
+            {upcomingHere.map((e) => (
+              <li class="flex items-baseline justify-between gap-3 py-1.5 border-b border-zinc-800 last:border-b-0">
+                <a href={`/events/${e.slug}`} class="text-brand-500 hover:underline">{e.title}</a>
+                <span class="text-zinc-400 text-xs shrink-0">{fmtDate(e.start_at)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </aside>
+  </article>
+
+  {hasCoords && (
+    <section class="border-t border-zinc-800 bg-zinc-900">
+      <div class="max-w-5xl mx-auto px-4 py-12">
         <h2 class="font-display text-xl font-semibold mb-3">Map</h2>
-        <div class="aspect-[16/10] bg-zinc-800 border border-zinc-800 rounded-lg overflow-hidden">
+        <div class="aspect-[16/9] bg-zinc-800 border border-zinc-800 rounded-lg overflow-hidden">
           <SatelliteMap
             client:visible
             lat={loc.latitude!}
@@ -77,38 +119,6 @@ const hasCoords = loc.latitude !== null && loc.longitude !== null;
           />
         </div>
       </div>
-    )}
-
-    {loc.map_image_key && (
-      <div class="mb-10">
-        <h2 class="font-display text-xl font-semibold mb-3">Venue map</h2>
-        <img
-          src={`/media/${loc.map_image_key}`}
-          alt={`${loc.name} venue map`}
-          class="w-full rounded-lg border border-zinc-800"
-        />
-      </div>
-    )}
-
-    {directionsHtml && (
-      <div class="mb-10">
-        <h2 class="font-display text-xl font-semibold mb-3">Getting there</h2>
-        <div class="prose max-w-none" set:html={directionsHtml} />
-      </div>
-    )}
-
-    {upcomingHere.length > 0 && (
-      <div class="mt-10 border-t border-zinc-800 pt-6">
-        <h2 class="font-display text-xl font-semibold mb-3">Upcoming events here</h2>
-        <ul class="space-y-2 text-sm">
-          {upcomingHere.map((e) => (
-            <li class="flex items-baseline justify-between gap-4 py-2 border-b border-slate-100">
-              <a href={`/events/${e.slug}`} class="text-brand-700 hover:underline">{e.title}</a>
-              <span class="text-zinc-400">{fmtDate(e.start_at)}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
-  </article>
+    </section>
+  )}
 </PublicLayout>
