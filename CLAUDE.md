@@ -64,7 +64,13 @@ There's no `sharp` in Workers. `ImageUpload.tsx` resizes via `<canvas>` to WebP 
 
 The import scripts write idempotent SQL to `seeds/imports/*.sql` (gitignored — references R2 objects that only exist in local `.wrangler/state/`). `scripts/seed-local.mjs` and `seed-remote.mjs` apply `demo.sql` plus every file in that directory. To repopulate on a new machine, re-run the import scripts — they're documented in `README.md`.
 
-### 11. Photographer upload flow is secret-URL-gated, not logged-in
+### 11. Wrangler's migrations parser splits on `;`, even inside strings
+
+`wrangler d1 migrations apply` tokenizes a migration by `;` and sends each chunk to D1 as a separate statement — it is **not** quote-aware. A semicolon inside a string literal (e.g. inside a markdown `body_md` value) silently fragments the surrounding INSERT, and the migration is marked ✅ applied even though half the statements ran on broken fragments. Symptoms: migration "succeeds," but rows are missing afterward.
+
+When seeding prose content via a migration, scrub `;` from inside string literals before committing (replace with `.`, `,`, or em-dash). `wrangler d1 execute --file=…` uses a different code path that *does* handle this correctly, so the SQL itself can be valid — only the migrations runner is broken. If you must keep the semicolons, apply via `execute --file` outside the migrations system instead.
+
+### 12. Photographer upload flow is secret-URL-gated, not logged-in
 
 Each `photographer` row has an `upload_token` column. Visiting `/p/<token>` lists their assigned events; `/p/<token>/<eventId>` shows their photos and lets them upload more. There is no login — the token is the credential. Token rotation lives at `/admin/api/photographers/regenerate-token`; old URLs 404 the instant a new one is generated.
 
@@ -90,6 +96,20 @@ Wrangler queries are useful for sanity checks:
 pnpm wrangler d1 execute cscc --local --command "SELECT count(*) FROM events"
 pnpm wrangler r2 object list cscc-media --local | head
 ```
+
+## Deploys
+
+Pushing to `main` triggers Cloudflare Workers Builds, which runs:
+
+```sh
+pnpm wrangler d1 migrations apply cscc --remote && pnpm wrangler deploy
+```
+
+That's the whole production path. Practical consequences:
+
+- **Schema + data changes ship as migrations.** Any one-off SQL that needs to land in prod has to live in `migrations/` to be picked up by CI. A file dropped in `seeds/deploy/` or `seeds/imports/` won't run on push. Pattern: a schema migration (e.g. `0008_*.sql`) followed by a data migration (e.g. `0009_seed_*.sql`) using `INSERT OR IGNORE` for new rows + idempotent UPDATEs so a re-apply is harmless.
+- **demo.sql + migrations both touch the pages table on local.** Migrations run *before* `seed-local.mjs`, so a `DELETE FROM pages` in demo.sql would undo whatever a data migration just seeded. The seed therefore uses `INSERT OR REPLACE` and skips the wipe for `pages` — apply the same pattern to any other table that picks up data migrations.
+- **CI doesn't run `db:seed:remote`.** That script (`scripts/seed-remote.mjs`) is for first-time setup of a fresh remote D1, not for routine deploys. Don't add it to the build command.
 
 ## Conventions
 
