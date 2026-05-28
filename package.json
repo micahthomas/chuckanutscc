@@ -21,7 +21,10 @@
   "dependencies": {
     "@astrojs/cloudflare": "^13.5.4",
     "@astrojs/react": "^5.0.5",
+    "@codemirror/lang-markdown": "^6.5.0",
+    "@mdxeditor/editor": "^4.0.1",
     "@tailwindcss/vite": "^4.0.0",
+    "@uiw/react-codemirror": "^4.25.10",
     "@zip.js/zip.js": "^2.8.26",
     "astro": "^6.3.7",
     "leaflet": "^1.9.4",

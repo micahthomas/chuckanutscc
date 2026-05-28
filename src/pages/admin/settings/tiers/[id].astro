@@ -36,7 +36,7 @@ const flash = Astro.url.searchParams.get("flash");
     </label>
 
     <MarkdownEditor
-      client:load
+      client:only="react"
       name="description_md"
       defaultValue={tier.description_md ?? ""}
       label="Description"

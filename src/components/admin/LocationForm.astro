@@ -62,7 +62,7 @@ const isEdit = !!loc;
 
     <div class="md:col-span-2">
       <MarkdownEditor
-        client:load
+        client:only="react"
         name="description_md"
         defaultValue={loc?.description_md ?? ""}
         label="Description"
@@ -72,7 +72,7 @@ const isEdit = !!loc;
 
     <div class="md:col-span-2">
       <MarkdownEditor
-        client:load
+        client:only="react"
         name="directions_md"
         defaultValue={loc?.directions_md ?? ""}
         label="Directions & venue notes"

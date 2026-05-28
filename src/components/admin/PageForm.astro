@@ -46,7 +46,7 @@ const isEdit = !!page;
   </div>
 
   <MarkdownEditor
-    client:load
+    client:only="react"
     name="body_md"
     defaultValue={page?.body_md ?? ""}
     label="Body"

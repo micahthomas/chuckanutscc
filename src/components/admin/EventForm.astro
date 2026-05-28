@@ -202,7 +202,7 @@ const locationLookup = Object.fromEntries(
   </fieldset>
 
   <MarkdownEditor
-    client:load
+    client:only="react"
     name="description_md"
     defaultValue={evt?.description_md ?? ""}
     label="Description"

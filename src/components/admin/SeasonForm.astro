@@ -45,7 +45,7 @@ const isEdit = !!season;
   </div>
 
   <MarkdownEditor
-    client:load
+    client:only="react"
     name="description_md"
     defaultValue={season?.description_md ?? ""}
     label="Description (optional)"

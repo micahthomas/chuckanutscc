@@ -46,7 +46,7 @@ const isEdit = !!p;
 
     <div class="md:col-span-2">
       <MarkdownEditor
-        client:load
+        client:only="react"
         name="bio_md"
         defaultValue={p?.bio_md ?? ""}
         label="Bio (optional)"

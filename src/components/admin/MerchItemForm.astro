@@ -38,7 +38,7 @@ const optionsText = options.map((o) => `${o.name}: ${o.choices.join(", ")}`).joi
   </div>
 
   <MarkdownEditor
-    client:load
+    client:only="react"
     name="description_md"
     defaultValue={item?.description_md ?? ""}
     label="Description"
