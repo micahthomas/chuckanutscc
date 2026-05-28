@@ -2,14 +2,17 @@ import type { APIRoute } from "astro";
 import { db } from "~/lib/db";
 import { assertPhotographerEvent } from "~/lib/photographer-auth";
 
-type Direction = "up" | "down";
-
 /**
- * Moves a single photo one slot earlier (`up`) or later (`down`) in the
- * gallery for this photographer/event. To keep the implementation simple we
- * re-number every photo's sort_order on each swap rather than thinking about
- * NULLs vs. partial coverage — at the volumes a photographer manages
- * (dozens, maybe hundreds for a busy event), one batch of UPDATEs is fine.
+ * Bulk reorder: client sends the full ordered list of photo IDs for this
+ * photographer/event and the server writes sort_order = index+1 for each.
+ *
+ * Works for every reorder UI — drag-and-drop, jump-to-top/bottom, and the
+ * step arrows — because the client always just computes the new ordering
+ * locally and POSTs the result.
+ *
+ * The submitted list is validated against the database: every ID must belong
+ * to this (photographer, event), and the set must match exactly. We refuse
+ * partial reorders so a stale page can't silently lose photos.
  */
 export const POST: APIRoute = async (ctx) => {
   const token = ctx.params.token as string;
@@ -24,42 +27,34 @@ export const POST: APIRoute = async (ctx) => {
   }
   const { photographer, event } = session;
 
-  const body = await ctx.request.json().catch(() => null) as {
-    photoId?: string;
-    direction?: Direction;
-  } | null;
-  const photoId = body?.photoId;
-  const direction = body?.direction;
-  if (!photoId || (direction !== "up" && direction !== "down")) {
-    return Response.json({ error: "photoId + direction required" }, { status: 400 });
+  const body = await ctx.request.json().catch(() => null) as { photoIds?: unknown } | null;
+  const submitted = body?.photoIds;
+  if (!Array.isArray(submitted) || !submitted.every((id) => typeof id === "string")) {
+    return Response.json({ error: "photoIds (string[]) required" }, { status: 400 });
   }
+  const photoIds = submitted as string[];
 
   const { results } = await db(ctx)
     .prepare(
-      `SELECT id FROM photos
-       WHERE event_id = ? AND photographer_id = ?
-       ORDER BY COALESCE(sort_order, 999999) ASC,
-                COALESCE(exif_taken_at, uploaded_at) ASC`,
+      `SELECT id FROM photos WHERE event_id = ? AND photographer_id = ?`,
     )
     .bind(event.id, photographer.id)
     .all<{ id: string }>();
+  const owned = new Set(results.map((r) => r.id));
 
-  const ids = results.map((r) => r.id);
-  const idx = ids.indexOf(photoId);
-  if (idx === -1) return Response.json({ error: "Not found" }, { status: 404 });
-
-  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-  if (swapIdx < 0 || swapIdx >= ids.length) {
-    return Response.json({ ok: true, moved: false });
+  if (photoIds.length !== owned.size || photoIds.some((id) => !owned.has(id))) {
+    return Response.json(
+      { error: "Submitted list does not match this event's photos. Refresh and try again." },
+      { status: 409 },
+    );
   }
-  [ids[idx], ids[swapIdx]] = [ids[swapIdx]!, ids[idx]!];
 
-  const stmts = ids.map((id, i) =>
+  const stmts = photoIds.map((id, i) =>
     db(ctx)
       .prepare(`UPDATE photos SET sort_order = ? WHERE id = ?`)
       .bind(i + 1, id),
   );
   await db(ctx).batch(stmts);
 
-  return Response.json({ ok: true, moved: true });
+  return Response.json({ ok: true, count: photoIds.length });
 };
