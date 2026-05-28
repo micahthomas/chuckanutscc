@@ -2,7 +2,6 @@
 import AdminLayout from "~/layouts/AdminLayout.astro";
 import PhotographerForm from "~/components/admin/PhotographerForm.astro";
 import { db } from "~/lib/db";
-import { env } from "cloudflare:workers";
 
 const id = Astro.params.id!;
 const photographer = await db(Astro)
@@ -18,8 +17,10 @@ if (!photographer) {
 }
 
 const flash = Astro.url.searchParams.get("flash");
-const siteOrigin = env.PUBLIC_SITE_URL ?? Astro.url.origin;
-const uploadUrl = `${siteOrigin.replace(/\/$/, "")}/p/${photographer.upload_token}`;
+// Use the request origin so the URL matches whatever host the admin is on
+// (workers.dev, custom domain, or localhost). PUBLIC_SITE_URL is hardcoded
+// to localhost for the demo and would be wrong on every production deploy.
+const uploadUrl = `${Astro.url.origin}/p/${photographer.upload_token}`;
 ---
 
 <AdminLayout title={`Edit: ${photographer.name}`}>
