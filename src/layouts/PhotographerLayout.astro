@@ -1,5 +1,6 @@
 ---
 import "~/styles/global.css";
+import interLatin from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 
 interface Props {
   title: string;
@@ -18,6 +19,8 @@ const { title, photographerName, backToToken = null } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} — CSCC Photographers</title>
     <meta name="robots" content="noindex,nofollow" />
+    <link rel="preload" as="font" type="font/woff2" href={interLatin} crossorigin />
+    <link rel="icon" type="image/png" href="/favicon.png" />
   </head>
   <body class="min-h-screen bg-zinc-900 text-zinc-100">
     <header class="bg-slate-900 text-slate-100 border-b border-slate-800">

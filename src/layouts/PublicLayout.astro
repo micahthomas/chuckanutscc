@@ -1,5 +1,6 @@
 ---
 import "~/styles/global.css";
+import interLatin from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 import { db } from "~/lib/db";
 
 interface Props {
@@ -32,6 +33,12 @@ const flash = Astro.url.searchParams.get("flash");
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     {description && <meta name="description" content={description} />}
+    {/* Preload the Inter variable file so it arrives before first paint.
+        Without this the browser renders system-ui then visibly swaps. */}
+    <link rel="preload" as="font" type="font/woff2" href={interLatin} crossorigin />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <meta name="theme-color" content="#f97316" />
   </head>
   <body class="min-h-screen flex flex-col">
     <header class="border-b border-zinc-800">
