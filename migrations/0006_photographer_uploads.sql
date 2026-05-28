@@ -12,7 +12,11 @@
 -- Wix-imported photos survive because we INSERT ... SELECT them into the new
 -- shape with their EXIF, dimensions, R2 keys and status preserved.
 
-PRAGMA foreign_keys = OFF;
+-- Defer FK checks to commit. `PRAGMA foreign_keys = OFF` is per-connection,
+-- and D1's remote API runs each statement on a fresh connection, so it gets
+-- ignored mid-migration. `defer_foreign_keys` is honored inside the
+-- transaction wrangler wraps the migration in.
+PRAGMA defer_foreign_keys = TRUE;
 
 -- ---------------------------------------------------------------------------
 -- photographers: add upload_token
@@ -108,5 +112,3 @@ CREATE INDEX idx_photos_photog ON photos(photographer_id, event_id);
 -- ---------------------------------------------------------------------------
 
 DROP TABLE drive_sync_state;
-
-PRAGMA foreign_keys = ON;
