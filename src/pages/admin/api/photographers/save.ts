@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { db, now } from "~/lib/db";
 import { newId } from "~/lib/id";
 import { required, str, boolField, slugify, seeOther, badRequest } from "~/lib/forms";
+import { generateUploadToken } from "~/lib/tokens";
 
 export const POST: APIRoute = async (ctx) => {
   if (!ctx.locals.admin) return new Response("Unauthorized", { status: 401 });
@@ -45,10 +46,10 @@ export const POST: APIRoute = async (ctx) => {
     await db(ctx)
       .prepare(
         `INSERT INTO photographers (id, slug, name, bio_md, portfolio_url, instagram_url,
-                                    contact_email, active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                    contact_email, active, upload_token, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .bind(pId, slug, name, bioMd, portfolioUrl, instagramUrl, contactEmail, active, ts, ts)
+      .bind(pId, slug, name, bioMd, portfolioUrl, instagramUrl, contactEmail, active, generateUploadToken(), ts, ts)
       .run();
   }
 

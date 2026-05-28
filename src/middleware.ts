@@ -15,5 +15,14 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     ctx.locals.admin = { email };
   }
 
-  return next();
+  const res = await next();
+
+  // The /p/<token>/* and /api/p/<token>/* paths are secret-URL-gated; ensure
+  // intermediates and crawlers don't cache or index them.
+  if (ctx.url.pathname.startsWith("/p/") || ctx.url.pathname.startsWith("/api/p/")) {
+    res.headers.set("Cache-Control", "no-store");
+    res.headers.set("X-Robots-Tag", "noindex,nofollow");
+  }
+
+  return res;
 });

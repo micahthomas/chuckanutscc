@@ -11,7 +11,7 @@ A rebuild of [chuckanutscc.org](https://www.chuckanutscc.org/) (a Bellingham, WA
 - **Astro 6** with `output: "server"` + the `@astrojs/cloudflare` adapter v13
 - **Cloudflare Workers** (Static Assets) — single Worker, single deploy
 - **D1** for everything persisted, **R2** for images/photos
-- **React islands** for any interactivity that's not trivially HTML (`PhotoMosaic`, `MarkdownEditor`, `ImageUpload`, `SatelliteMap`)
+- **React islands** for any interactivity that's not trivially HTML (`PhotoMosaic`, `MarkdownEditor`, `ImageUpload`, `SatelliteMap`, `PhotographerUploader`, `PhotographerPhotoManager`)
 - **Tailwind v4** via `@tailwindcss/vite` — no `tailwind.config.js`, theme tokens live inside `src/styles/global.css`
 - **Cloudflare Access** gates `/admin/*` in prod; middleware reads the email from `Cf-Access-Authenticated-User-Email`
 
@@ -64,6 +64,14 @@ There's no `sharp` in Workers. `ImageUpload.tsx` resizes via `<canvas>` to WebP 
 
 The import scripts write idempotent SQL to `seeds/imports/*.sql` (gitignored — references R2 objects that only exist in local `.wrangler/state/`). `scripts/seed-local.mjs` and `seed-remote.mjs` apply `demo.sql` plus every file in that directory. To repopulate on a new machine, re-run the import scripts — they're documented in `README.md`.
 
+### 11. Photographer upload flow is secret-URL-gated, not logged-in
+
+Each `photographer` row has an `upload_token` column. Visiting `/p/<token>` lists their assigned events; `/p/<token>/<eventId>` shows their photos and lets them upload more. There is no login — the token is the credential. Token rotation lives at `/admin/api/photographers/regenerate-token`; old URLs 404 the instant a new one is generated.
+
+The browser uploader (`src/components/photographer/PhotographerUploader.tsx`) handles drag-drop, multi-select, and `.zip` archives. ZIPs are streamed via `@zip.js/zip.js` so 500MB+ archives don't blow memory — never replace this with JSZip. Each image is EXIF-read via `exifr` and resized in-browser to a thumb (600px) + display (2400px) WebP before being POSTed with the original to `/api/p/[token]/[eventId]/upload`. No Workers-side image processing is needed and no `sharp` runs in production (it's still used by the Node-side import scripts).
+
+The middleware adds `Cache-Control: no-store` + `X-Robots-Tag: noindex,nofollow` to every `/p/*` and `/api/p/*` response so leaked URLs don't end up cached or indexed.
+
 ## Useful commands
 
 ```sh
@@ -106,6 +114,11 @@ officer
   └─→ Cloudflare Access (prod) → middleware sets ctx.locals.admin
        └─→ Admin page renders form → POST /admin/api/<entity>/save → seeOther()
             └─→ ImageUpload + MarkdownEditor islands handle their own fetches
+
+photographer
+  └─→ /p/<upload_token> (no auth, secret-URL-gated)
+       └─→ Per-event page mounts PhotographerUploader + PhotographerPhotoManager
+            └─→ Browser EXIF + canvas resize → POST /api/p/<token>/<eventId>/{upload,photos/*}
 ```
 
 ## When NOT to add a new dependency

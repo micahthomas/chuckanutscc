@@ -62,9 +62,14 @@ const flash = Astro.url.searchParams.get("flash");
           <li class="bg-white border border-slate-200 rounded p-3 flex items-center justify-between gap-3">
             <div class="flex-1 min-w-0">
               <div class="font-medium">{p.photographer_name}</div>
-              <div class="text-xs text-slate-500 font-mono truncate">{p.drive_folder_url}</div>
               {p.notes && <div class="text-xs text-slate-400 mt-1">{p.notes}</div>}
             </div>
+            <a
+              href={`/admin/photographers/${p.photographer_id}`}
+              class="text-xs text-slate-500 hover:underline"
+            >
+              Upload URL →
+            </a>
             <form method="post" action="/admin/api/events/photographers/remove">
               <input type="hidden" name="event_id" value={evt.id} />
               <input type="hidden" name="ep_id" value={p.id} />
@@ -79,7 +84,7 @@ const flash = Astro.url.searchParams.get("flash");
       <form method="post" action="/admin/api/events/photographers/add" class="border border-slate-200 rounded p-4 bg-slate-50">
         <input type="hidden" name="event_id" value={evt.id} />
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <label class="block">
+          <label class="block sm:col-span-1">
             <span class="text-xs text-slate-500">Photographer</span>
             <select name="photographer_id" required class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white">
               <option value="">— select —</option>
@@ -87,16 +92,6 @@ const flash = Astro.url.searchParams.get("flash");
             </select>
           </label>
           <label class="block sm:col-span-2">
-            <span class="text-xs text-slate-500">Drive folder URL</span>
-            <input
-              type="url"
-              name="drive_folder_url"
-              required
-              placeholder="https://drive.google.com/drive/folders/..."
-              class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono"
-            />
-          </label>
-          <label class="block sm:col-span-3">
             <span class="text-xs text-slate-500">Notes (optional, officer-only)</span>
             <input
               type="text"

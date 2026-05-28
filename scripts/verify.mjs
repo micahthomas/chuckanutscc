@@ -142,7 +142,7 @@ await visit("Admin pages list",      "/admin/pages",                           {
 await visit("Admin page edit",       "/admin/pages/page_about",                { expect: ["About the Club", "Body (Markdown)"], shot: "25-admin-page-edit" });
 await visit("Admin photographers",   "/admin/photographers",                   { expect: ["Alice Chen", "Bob Martinez"], shot: "26-admin-photographers" });
 await visit("Admin photographer edit","/admin/photographers/photog_alice",     { expect: ["Alice Chen"], shot: "27-admin-photographer-edit" });
-await visit("Admin photos",          "/admin/photos",                          { expect: ["Sync from Drive"], shot: "28-admin-photos-empty" });
+await visit("Admin photos",          "/admin/photos",                          { expect: ["Photos"], shot: "28-admin-photos-empty" });
 await visit("Admin members list",    "/admin/members",                         { expect: ["Jane Doe", "Bob Smith"], shot: "29-admin-members" });
 await visit("Admin member edit",     "/admin/members/mbr_jane",                { expect: ["Jane Doe", "Payment history"], shot: "30-admin-member-edit" });
 await visit("Admin merch list",      "/admin/merch",                           { expect: ["CSCC Club T-Shirt", "CSCC Sticker Pack"], shot: "31-admin-merch" });
@@ -156,19 +156,17 @@ await visit("Admin emails log",      "/admin/emails",                          {
 await visit("Admin settings",        "/admin/settings",                        { expect: ["Site settings", "Announcement banner"], shot: "39-admin-settings" });
 await visit("Admin tier edit",       "/admin/settings/tiers/individual",       { expect: ["Individual tier", "Annual price"], shot: "40-admin-tier-edit" });
 
-// ---------- Photo sync simulator (drives the full photo workflow) ----------
-console.log("\n== Photo sync workflow ==");
-await visit("Trigger sync", "/admin/photos");
-const syncButton = page.locator('form[action="/admin/api/photos/sync"] button');
-await Promise.all([
-  page.waitForURL(/\/admin\/photos\?flash=/, { timeout: 30000 }),
-  syncButton.click(),
-]);
-await page.screenshot({ path: `${SHOTS}/41-admin-photos-synced.png`, fullPage: true });
-console.log("→ Photo sync ✓");
+// ---------- Photographer upload URL ----------
+console.log("\n== Photographer upload URL ==");
+await visit(
+  "Photographer landing",
+  "/p/demo-alice-token-aaaaaaaaaaaaaaaa",
+  { expect: ["Welcome, Alice Chen"], shot: "41-photographer-landing" },
+);
 
-await visit("Gallery (after sync)", "/gallery", { expect: ["Spring Autocross #1"], shot: "42-gallery-after" });
-await visit("Event gallery", "/gallery/2026-spring-autocross-1", { expect: ["Spring Autocross #1"], shot: "43-event-gallery" });
+// The /gallery URL still exists from the legacy Wix import — it should render
+// even with no new uploads, because those rows survive the migration.
+await visit("Gallery (legacy archive)", "/gallery", { shot: "42-gallery" });
 
 // ---------- Reminder processing ----------
 console.log("\n== Reminder processing ==");

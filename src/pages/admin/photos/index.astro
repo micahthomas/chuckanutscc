@@ -9,20 +9,20 @@ const binds: unknown[] = status === "all" ? [] : [status];
 
 const { results: photos } = await db(Astro)
   .prepare(
-    `SELECT ph.id, ph.event_id, ph.status, ph.r2_key_thumb, ph.synced_at, ph.filename,
+    `SELECT ph.id, ph.event_id, ph.status, ph.r2_key_thumb, ph.uploaded_at, ph.filename,
             e.title AS event_title, e.slug AS event_slug,
             p.name AS photographer_name
      FROM photos ph
      JOIN events e ON e.id = ph.event_id
      JOIN photographers p ON p.id = ph.photographer_id
      ${where}
-     ORDER BY ph.synced_at DESC
+     ORDER BY ph.uploaded_at DESC
      LIMIT 200`,
   )
   .bind(...binds)
   .all<{
     id: string; event_id: string; status: string; r2_key_thumb: string;
-    synced_at: number; filename: string;
+    uploaded_at: number; filename: string;
     event_title: string; event_slug: string; photographer_name: string;
   }>();
 
@@ -42,11 +42,12 @@ const flash = Astro.url.searchParams.get("flash");
 <AdminLayout title="Photos">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-semibold">Photos</h1>
-    <form method="post" action="/admin/api/photos/sync">
-      <button class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900">
-        Sync from Drive
-      </button>
-    </form>
+    <a
+      href="/admin/photographers"
+      class="text-sm text-brand-700 hover:underline"
+    >
+      Manage photographers →
+    </a>
   </div>
 
   {flash && (
@@ -68,7 +69,7 @@ const flash = Astro.url.searchParams.get("flash");
     <p class="text-slate-500">
       No photos in this view.
       {status === "live" && counts?.live === 0 && (
-        <> Hit "Sync from Drive" above to pull from each event's photographer folder.</>
+        <> Photographers upload via their personal URL on the photographer page.</>
       )}
     </p>
   ) : (
@@ -81,7 +82,7 @@ const flash = Astro.url.searchParams.get("flash");
           <div class="p-2 text-xs">
             <div class="font-medium truncate">{ph.event_title}</div>
             <div class="text-slate-500 truncate">{ph.photographer_name}</div>
-            <div class="text-slate-400 mt-1">{fmtDateTime(ph.synced_at)}</div>
+            <div class="text-slate-400 mt-1">{fmtDateTime(ph.uploaded_at)}</div>
             <div class="mt-2 flex gap-1">
               {ph.status !== "live" && (
                 <form method="post" action="/admin/api/photos/set-status" class="inline">

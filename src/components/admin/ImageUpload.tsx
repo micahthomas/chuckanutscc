@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from "react";
+import { resizeToWebP } from "~/lib/client-images";
 
 interface Props {
   /** Form input name — a hidden text input ends up with the chosen R2 key. */
@@ -47,9 +48,9 @@ export default function ImageUpload({
     setStatus("uploading");
     setError(null);
     try {
-      const resized = await resizeToWebP(file, maxWidth);
+      const { blob } = await resizeToWebP(file, maxWidth);
       const body = new FormData();
-      body.set("file", resized, "upload.webp");
+      body.set("file", blob, "upload.webp");
       body.set("category", category);
       const res = await fetch("/admin/api/upload", { method: "POST", body });
       if (!res.ok) {
@@ -126,31 +127,3 @@ export default function ImageUpload({
   );
 }
 
-/**
- * Loads the file as an image, draws to canvas at a max width, exports WebP.
- * Falls back to the original blob if WebP encoding is unavailable.
- */
-async function resizeToWebP(file: File, maxWidth: number): Promise<Blob> {
-  const bitmap = await createImageBitmap(file).catch(() => null);
-  if (!bitmap) return file;
-
-  const scale = bitmap.width > maxWidth ? maxWidth / bitmap.width : 1;
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return file;
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-
-  return await new Promise<Blob>((resolve) => {
-    canvas.toBlob(
-      (blob) => resolve(blob ?? file),
-      "image/webp",
-      0.82,
-    );
-  });
-}

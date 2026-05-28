@@ -39,7 +39,7 @@ pnpm db:seed:local           # apply demo.sql + every seeds/imports/*.sql
 
 # Importers (write SQL to seeds/imports/, push files to R2)
 bash scripts/import-wix-images.sh
-node scripts/import-photos.mjs --src DIR --event ID --photographer ID --folder-url URL
+node scripts/import-photos.mjs --src DIR --event ID --photographer ID
 node scripts/import-course-map.mjs --file IMG --event ID
 node scripts/import-scorekeeper-season.mjs --series cscc2026 --season season_2026
 
@@ -85,7 +85,8 @@ src/
     markdown.ts   Server-side marked renderer
     stripe.ts     Checkout — auto-falls back to offline mock when no key
     email.ts      Resend wrapper — same offline pattern
-    drive.ts     Google Drive photo sync (offline simulator generates SVGs)
+    photographer-auth.ts  Secret-URL gate for /p/<token>/* (no login, no session)
+    tokens.ts     Random upload-token generator
     reminders.ts  Event reminder cron logic
   middleware.ts   /admin guard (reads Cloudflare Access header)
 

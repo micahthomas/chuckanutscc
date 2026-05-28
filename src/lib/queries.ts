@@ -314,7 +314,6 @@ export interface EventPhotographerRow {
   photographer_id: string;
   photographer_name: string;
   photographer_slug: string;
-  drive_folder_url: string;
   notes: string | null;
 }
 
@@ -325,7 +324,7 @@ export async function loadEventPhotographers(
   const { results } = await db(ctx)
     .prepare(
       `SELECT ep.id, ep.photographer_id, p.name AS photographer_name,
-              p.slug AS photographer_slug, ep.drive_folder_url, ep.notes
+              p.slug AS photographer_slug, ep.notes
        FROM event_photographers ep
        JOIN photographers p ON p.id = ep.photographer_id
        WHERE ep.event_id = ?
@@ -347,31 +346,51 @@ export interface PhotoRow {
   r2_key_display: string;
   r2_key_full: string;
   exif_taken_at: number | null;
-  drive_uploaded_at: number;
+  uploaded_at: number;
+  sort_order: number | null;
   status: string;
   width: number | null;
   height: number | null;
 }
 
+/**
+ * `sort_order` (when set) wins over EXIF time so photographers can pin
+ * specific shots to the front of their event gallery. The COALESCE pushes
+ * un-pinned photos to the end of the sort window.
+ */
+const PHOTO_ORDER_BY =
+  "COALESCE(ph.sort_order, 999999) ASC, COALESCE(ph.exif_taken_at, ph.uploaded_at) ASC";
+
 export async function loadEventPhotos(
   ctx: APIContext | AstroGlobal,
   eventId: string,
-  opts: { status?: "live" | "hidden" | "rejected" | "all" } = {},
+  opts: {
+    status?: "live" | "hidden" | "rejected" | "all";
+    photographerId?: string;
+  } = {},
 ): Promise<PhotoRow[]> {
   const statusFilter = opts.status ?? "live";
-  const where = statusFilter === "all" ? "ph.event_id = ?" : "ph.event_id = ? AND ph.status = ?";
+  const clauses: string[] = ["ph.event_id = ?"];
   const binds: unknown[] = [eventId];
-  if (statusFilter !== "all") binds.push(statusFilter);
+  if (statusFilter !== "all") {
+    clauses.push("ph.status = ?");
+    binds.push(statusFilter);
+  }
+  if (opts.photographerId) {
+    clauses.push("ph.photographer_id = ?");
+    binds.push(opts.photographerId);
+  }
   const { results } = await db(ctx)
     .prepare(
       `SELECT ph.id, ph.event_id, ph.photographer_id,
               p.name AS photographer_name, p.slug AS photographer_slug,
               ph.filename, ph.r2_key_thumb, ph.r2_key_display, ph.r2_key_full,
-              ph.exif_taken_at, ph.drive_uploaded_at, ph.status, ph.width, ph.height
+              ph.exif_taken_at, ph.uploaded_at, ph.sort_order,
+              ph.status, ph.width, ph.height
        FROM photos ph
        JOIN photographers p ON p.id = ph.photographer_id
-       WHERE ${where}
-       ORDER BY COALESCE(ph.exif_taken_at, ph.drive_uploaded_at) ASC`,
+       WHERE ${clauses.join(" AND ")}
+       ORDER BY ${PHOTO_ORDER_BY}`,
     )
     .bind(...binds)
     .all<PhotoRow>();
@@ -391,7 +410,8 @@ export interface RecentPhotoRow {
   r2_key_display: string;
   r2_key_full: string;
   exif_taken_at: number | null;
-  drive_uploaded_at: number;
+  uploaded_at: number;
+  sort_order: number | null;
   width: number | null;
   height: number | null;
 }
@@ -414,12 +434,12 @@ export async function loadRecentPhotos(
       `SELECT ph.id, ph.event_id, e.title AS event_title, e.slug AS event_slug,
               ph.photographer_id, p.name AS photographer_name, p.slug AS photographer_slug,
               ph.filename, ph.r2_key_thumb, ph.r2_key_display, ph.r2_key_full,
-              ph.exif_taken_at, ph.drive_uploaded_at, ph.width, ph.height
+              ph.exif_taken_at, ph.uploaded_at, ph.sort_order, ph.width, ph.height
        FROM photos ph
        JOIN events e ON e.id = ph.event_id
        JOIN photographers p ON p.id = ph.photographer_id
        WHERE ph.status = 'live' ${where}
-       ORDER BY COALESCE(ph.exif_taken_at, ph.drive_uploaded_at) DESC
+       ORDER BY COALESCE(ph.exif_taken_at, ph.uploaded_at) DESC
        LIMIT ? OFFSET ?`,
     )
     .bind(...binds)
@@ -560,6 +580,7 @@ export interface PhotographerRow {
   instagram_url: string | null;
   contact_email: string | null;
   active: number;
+  upload_token: string;
 }
 
 export async function loadPhotographers(
@@ -570,7 +591,7 @@ export async function loadPhotographers(
   const { results } = await db(ctx)
     .prepare(
       `SELECT id, slug, name, bio_md, headshot_key, portfolio_url,
-              instagram_url, contact_email, active
+              instagram_url, contact_email, active, upload_token
        FROM photographers ${where}
        ORDER BY name`,
     )
@@ -585,7 +606,7 @@ export async function loadPhotographerBySlug(
   return await db(ctx)
     .prepare(
       `SELECT id, slug, name, bio_md, headshot_key, portfolio_url,
-              instagram_url, contact_email, active
+              instagram_url, contact_email, active, upload_token
        FROM photographers WHERE slug = ?`,
     )
     .bind(slug)

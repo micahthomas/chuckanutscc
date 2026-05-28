@@ -32,7 +32,6 @@ const EVENT_ID = "evt_legacy";
 const EVENT_SLUG = "pre-2024-highlights";
 const PHOTOG_ID = "photog_club_archive";
 const PHOTOG_SLUG = "club-archive";
-const FOLDER_URL = "https://www.chuckanutscc.org/gallery";
 
 // Skip the chrome PNGs (logos / icons) and the handful of hashes that
 // import-wix-images.sh already provisions as branding / hero / shop.
@@ -110,7 +109,6 @@ for (let idx = 0; idx < entries.length; idx++) {
     thumbPath, displayPath,
     thumbKey: `imports/legacy/${photoId}/thumb.webp`,
     displayKey: `imports/legacy/${photoId}/display.webp`,
-    driveFileId: `legacy_${stem}`,
     width: meta.width ?? null,
     height: meta.height ?? null,
     takenAt,
@@ -150,25 +148,23 @@ const lines = [
   `   NULL, 'A selection of photos carried over from the previous club gallery.',`,
   `   ${esc(SEASON_ID)}, ${now}, ${now});`,
   ``,
-  `INSERT OR IGNORE INTO photographers (id, slug, name, active, created_at, updated_at)`,
-  `VALUES (${esc(PHOTOG_ID)}, ${esc(PHOTOG_SLUG)}, 'Club Archive', 1, ${now}, ${now});`,
+  `INSERT OR IGNORE INTO photographers (id, slug, name, active, upload_token, created_at, updated_at)`,
+  `VALUES (${esc(PHOTOG_ID)}, ${esc(PHOTOG_SLUG)}, 'Club Archive', 1,`,
+  `        lower(hex(randomblob(16))), ${now}, ${now});`,
   ``,
-  `INSERT OR IGNORE INTO event_photographers (id, event_id, photographer_id, drive_folder_url, created_at)`,
-  `VALUES (${esc(`ep_${EVENT_ID}_${PHOTOG_ID}`)}, ${esc(EVENT_ID)}, ${esc(PHOTOG_ID)}, ${esc(FOLDER_URL)}, ${now});`,
-  ``,
-  `INSERT OR REPLACE INTO drive_sync_state (drive_folder_url, last_synced_at, last_page_token, last_error, last_error_at)`,
-  `VALUES (${esc(FOLDER_URL)}, ${now}, NULL, NULL, NULL);`,
+  `INSERT OR IGNORE INTO event_photographers (id, event_id, photographer_id, created_at)`,
+  `VALUES (${esc(`ep_${EVENT_ID}_${PHOTOG_ID}`)}, ${esc(EVENT_ID)}, ${esc(PHOTOG_ID)}, ${now});`,
   ``,
 ];
 for (const r of records) {
   lines.push(
-    `INSERT OR REPLACE INTO photos (id, event_id, photographer_id, drive_file_id, drive_folder_url,`,
-    `   filename, exif_taken_at, drive_uploaded_at, width, height,`,
-    `   r2_key_thumb, r2_key_display, r2_key_full, status, synced_at)`,
+    `INSERT OR REPLACE INTO photos (id, event_id, photographer_id,`,
+    `   filename, exif_taken_at, uploaded_at, width, height,`,
+    `   r2_key_thumb, r2_key_display, r2_key_full, sort_order, status)`,
     `VALUES (${esc(r.photoId)}, ${esc(EVENT_ID)}, ${esc(PHOTOG_ID)},`,
-    `   ${esc(r.driveFileId)}, ${esc(FOLDER_URL)}, ${esc(r.filename)},`,
-    `   ${r.takenAt}, ${r.takenAt}, ${r.width ?? "NULL"}, ${r.height ?? "NULL"},`,
-    `   ${esc(r.thumbKey)}, ${esc(r.displayKey)}, ${esc(r.displayKey)}, 'live', ${now});`,
+    `   ${esc(r.filename)},`,
+    `   ${r.takenAt}, ${now}, ${r.width ?? "NULL"}, ${r.height ?? "NULL"},`,
+    `   ${esc(r.thumbKey)}, ${esc(r.displayKey)}, ${esc(r.displayKey)}, NULL, 'live');`,
     ``,
   );
 }

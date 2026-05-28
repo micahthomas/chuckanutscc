@@ -1,0 +1,46 @@
+---
+import "~/styles/global.css";
+
+interface Props {
+  title: string;
+  photographerName: string;
+  /** When set, renders a back-arrow to the photographer's event list. */
+  backToToken?: string | null;
+}
+
+const { title, photographerName, backToToken = null } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — CSCC Photographers</title>
+    <meta name="robots" content="noindex,nofollow" />
+  </head>
+  <body class="min-h-screen bg-slate-50 text-slate-900">
+    <header class="bg-slate-900 text-slate-100 border-b border-slate-800">
+      <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          {backToToken && (
+            <a href={`/p/${backToToken}`} class="text-slate-300 hover:text-white text-sm">
+              ← Events
+            </a>
+          )}
+          <span class="font-semibold">Chuckanut SCC Photographers</span>
+        </div>
+        <div class="text-xs text-slate-400 truncate max-w-[60%]">{photographerName}</div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8">
+      <slot />
+    </main>
+
+    <footer class="max-w-5xl mx-auto px-4 py-6 text-xs text-slate-400">
+      This is a private upload page. The URL is your only credential — please
+      keep it to yourself. Contact a club officer if you need it regenerated.
+    </footer>
+  </body>
+</html>
