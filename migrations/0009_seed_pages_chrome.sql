@@ -1,19 +1,17 @@
--- One-off production deploy script. Run AFTER `pnpm db:migrate:remote` has
--- applied migration 0008 (which adds the eyebrow/subtitle/hero_*/show_toc/
--- show_print columns to the pages table).
+-- Data migration paired with the schema change in 0008. Auto-runs in CI via
+-- `wrangler d1 migrations apply --remote` so prod gets both the new columns
+-- and their initial content in a single push.
 --
--- Idempotent:
--- - INSERT OR IGNORE for the new autocross-rules page (won't clobber if an
---   admin has already edited it through /admin/pages).
--- - UPDATEs on existing rows are safe to re-apply.
--- - The settings UPDATE just rewrites the value each time.
+-- Idempotent so an accidental re-apply is harmless:
+-- - INSERT OR IGNORE for the new autocross-rules page (won't clobber any
+--   admin edits made later through /admin/pages).
+-- - UPDATEs on existing rows just rewrite the same values.
 --
--- Apply with:
---   pnpm wrangler d1 execute cscc --remote --file=seeds/deploy/0008_pages_standardization.sql
---
--- After this file is applied, this folder can keep accumulating one-off
--- production data migrations (numbered to match the schema migration that
--- introduced the columns they fill in).
+-- On a fresh local reset this runs *before* demo.sql, so the UPDATEs for
+-- page_about and page_rules no-op (those rows don't exist yet) and the
+-- autocross-rules INSERT lands. Then demo.sql creates page_about/page_rules
+-- and sets their hero fields. demo.sql intentionally does NOT include the
+-- autocross-rules row — that lives only here.
 
 PRAGMA foreign_keys = ON;
 
@@ -57,14 +55,14 @@ INSERT OR IGNORE INTO pages (
 We conduct our events as guests of the site owners. Those entrants who cannot abide by our regulations may be asked to leave the property and may be disallowed from future events. CSCC has an infraction policy which sets out penalties for rule infractions. If you have any questions, ask the event chair.
 
 - **Every person must sign the event waiver to enter the site.** Minors must be accompanied by a legal guardian, who has filled out and signed a Minor Waiver for each minor.
-- **Forbidden at the event site:** alcohol, mind-altering or stimulating drugs; unrestrained animals; unrestrained children.
+- **Forbidden at the event site:** alcohol, mind-altering or stimulating drugs, unrestrained animals, or unrestrained children.
 - **Limit your speeding to on-track and against the clock.** No burn-outs, heating tires, or heating brakes anywhere near the event. The speed limit in the parking, pits, and staging areas is **5 MPH**.
 - **Leave only footprints and take only pictures.** Pick up after yourselves and others. Leave the site cleaner than you found it.
 - **Realize that an autocross is a full day''s commitment.** Every competitor is expected to work any position they are assigned to.
 
 ## Vehicle Classification
 
-It is the duty of the competitor to classify their vehicle. Some CSCC classes are based on SCCA classes; PAX and C3 Street classes are PAX-indexed. For specifics, refer to the official SCCA Solo Rules sections 13–20, and SCCA Solo Rules Appendix A for specific vehicle classing within a preparation level. If there are any questions about classing, contact the Autocross Rules Steward.
+It is the duty of the competitor to classify their vehicle. Some CSCC classes are based on SCCA classes. PAX and C3 Street classes are PAX-indexed. For specifics, refer to the official SCCA Solo Rules sections 13–20, and SCCA Solo Rules Appendix A for specific vehicle classing within a preparation level. If there are any questions about classing, contact the Autocross Rules Steward.
 
 - **NOV — Novice.** May run any vehicle, no tires below 200 treadwear.
 - **TO — Time Only.** No index, no trophies, just fun.
@@ -96,7 +94,7 @@ FSAE, kit cars, karts, and home-made vehicles are required to run their appropri
 
 ## Registration & Entry Fees
 
-A CSCC Club Membership is required to participate. Club membership is **$30 per calendar year**, with a **$20** membership available in the month of January. **Single weekend memberships are $10**; one weekend membership is transferable toward an annual membership — speak with the Membership Chair or Chief of Registration at the event.
+A CSCC Club Membership is required to participate. Club membership is **$30 per calendar year**, with a **$20** membership available in the month of January. **Single weekend memberships are $10**. One weekend membership is transferable toward an annual membership — speak with the Membership Chair or Chief of Registration at the event.
 
 Online registration via Scorekeeper (paying with PayPal through the Scorekeeper PayPal button) is highly encouraged. Day-of registration is handled on a case-by-case basis if slots remain open. The entry fee is set per-event by the autocross chair and listed on Scorekeeper. Entry fees will be refunded for events canceled due to circumstances beyond our control.
 
@@ -105,7 +103,7 @@ Online registration via Scorekeeper (paying with PayPal through the Scorekeeper 
 - Select the current CSCC series.
 - Add your vehicle to the series — required for your first event of the series, or any time you''re driving a vehicle you haven''t used in this series.
 - In the Events tab, confirm that you have read the rules.
-- Events with open registration have a green dot in the event title bar; others list the dates registration opens and closes.
+- Events with open registration have a green dot in the event title bar. Others list the dates registration opens and closes.
 - Select your event, choose your vehicle, then select the appropriate price based on your membership status.
 - Use the shopping cart button to pay for the event.
 
@@ -127,7 +125,7 @@ Your time starts when your vehicle breaks the light beam at the photocell on the
 
 ### Scoring & Points
 
-Your best run of each event is the only one used to determine the points you score. You score points only within the class you''re running in. Occasionally an event runs the course in one direction in the morning and the opposite direction in the evening; in that case, your best time in each direction is combined to determine your best time of the day.
+Your best run of each event is the only one used to determine the points you score. You score points only within the class you''re running in. Occasionally an event runs the course in one direction in the morning and the opposite direction in the evening — in that case, your best time in each direction is combined to determine your best time of the day.
 
 - If you are the winner of your class, you get **100 points**.
 - Otherwise: take the winner''s best time of the day (including penalties), divide by your best time of the day (including penalties), and multiply by 100. The result, 100 or less, is your point total for the event.
@@ -157,7 +155,7 @@ A DNF occurs when a driver misses consecutive gates/cones (or a significant port
 
 ## Participant Requirements
 
-Seat belts must be worn by all drivers and passengers. A lap belt meets the minimum requirement; shoulder harnesses are recommended. All drivers and passengers must wear an approved helmet. Drivers and passengers in a vehicle without a windshield must use full-coverage helmets. Helmets must comply with **Snell 2010 M or SA (or newer)**, or be listed in the Chuckanut Helmet Bulletin, and must be properly secured.
+Seat belts must be worn by all drivers and passengers. A lap belt meets the minimum requirement. Shoulder harnesses are recommended. All drivers and passengers must wear an approved helmet. Drivers and passengers in a vehicle without a windshield must use full-coverage helmets. Helmets must comply with **Snell 2010 M or SA (or newer)**, or be listed in the Chuckanut Helmet Bulletin, and must be properly secured.
 
 > **Note:** Snell 2010 helmets will no longer be eligible for autocross competition after 2025.
 
@@ -220,7 +218,7 @@ Park your vehicle in the pit area, prepare for tech inspection, and proceed to t
 
 ### Registration
 
-The registration table should be your first stop, even if you''ve already registered online. You must sign the waiver to enter the site and participate; you''ll be given a wristband to wear as proof. If you don''t have a CSCC barcode, or need a replacement, you''ll be told how to get one. A course map will be at the table.
+The registration table should be your first stop, even if you''ve already registered online. You must sign the waiver to enter the site and participate. You''ll be given a wristband to wear as proof. If you don''t have a CSCC barcode, or need a replacement, you''ll be told how to get one. A course map will be at the table.
 
 ### Course Walks
 
@@ -273,7 +271,7 @@ When you walk, walk in the exact place you want your vehicle to go. Stop and exa
 
 Engine mods don''t help if you can''t control the vehicle. Tires are the only part touching the course. Pressure is the lever you can move between runs — a few PSI can be the difference of whole seconds.
 
-Before every run, draw three radial chalk stripes at equal intervals on all four tires, from mid-sidewall about two inches into the tread. After the run, inspect the wear: stripes worn only on the tread = pressure too high; worn down into the sidewall = pressure too low. Adjust in 2 PSI increments. Tires heat up through the day, so keep re-chalking.
+Before every run, draw three radial chalk stripes at equal intervals on all four tires, from mid-sidewall about two inches into the tread. After the run, inspect the wear: stripes worn only on the tread = pressure too high. Worn down into the sidewall = pressure too low. Adjust in 2 PSI increments. Tires heat up through the day, so keep re-chalking.
 
 ### Have Fun
 
