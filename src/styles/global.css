@@ -28,7 +28,9 @@
 }
 
 html { font-family: var(--font-sans); font-feature-settings: "cv11", "ss01"; letter-spacing: -0.011em; }
-body { @apply bg-zinc-950 text-zinc-100 antialiased; }
+/* Each layout sets its own bg/text — dark for public site, light for admin —
+   so we don't poison admin <input>s with a global white text color. */
+body { @apply antialiased; }
 .font-display { letter-spacing: -0.025em; }
 
 /* Prose styles for rendered markdown content (page bodies, event descriptions). */
