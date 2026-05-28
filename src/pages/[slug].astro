@@ -10,13 +10,26 @@ if (!page) {
   return new Response("Not found", { status: 404 });
 }
 
-const html = renderMarkdown(page.body_md);
+// The hub header surfaces the page title, so strip a leading `# Title` from
+// the body to avoid rendering it twice.
+const body = page.body_md.replace(/^#\s+.*\n+/, "");
+const html = renderMarkdown(body);
 ---
 
 <PublicLayout
   title={page.seo_title ?? page.title}
   description={page.seo_description ?? undefined}
 >
+  <section class="border-b border-zinc-800 bg-zinc-900">
+    <div class="max-w-5xl mx-auto px-4 py-12">
+      <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3">Club</div>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">{page.title}</h1>
+      {page.seo_description && (
+        <p class="text-zinc-400 max-w-2xl">{page.seo_description}</p>
+      )}
+    </div>
+  </section>
+
   <article class="max-w-3xl mx-auto px-4 py-12">
     <div class="prose max-w-none" set:html={html} />
   </article>

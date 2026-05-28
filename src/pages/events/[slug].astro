@@ -57,26 +57,17 @@ const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
 ---
 
 <PublicLayout title={evt.title} description={evt.description_md.slice(0, 160)}>
-  <header class="relative isolate overflow-hidden bg-zinc-950 text-white">
-    {(evt.hero_image_key ?? evt.fallback_hero_key) && (
-      <img
-        src={`/media/${evt.hero_image_key ?? evt.fallback_hero_key}`}
-        alt=""
-        class="absolute inset-0 -z-10 h-full w-full object-cover"
-      />
-    )}
-    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-zinc-950/40 via-zinc-950/65 to-zinc-950"></div>
-
-    <div class="max-w-4xl mx-auto px-4 py-16 sm:py-20">
-      <a href="/events" class="text-sm text-zinc-300 hover:text-white">← All events</a>
-      <div class="text-xs uppercase tracking-wider text-brand-500 mt-4 mb-2 font-semibold">{evt.event_type}</div>
-      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3 drop-shadow">{evt.title}</h1>
-      <div class="flex flex-wrap gap-x-6 gap-y-1 text-zinc-300">
+  <section class="border-b border-zinc-800 bg-zinc-900">
+    <div class="max-w-5xl mx-auto px-4 py-12">
+      <a href="/events" class="text-sm text-zinc-400 hover:text-zinc-200">← All events</a>
+      <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mt-4 mb-3">{evt.event_type}</div>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">{evt.title}</h1>
+      <div class="flex flex-wrap gap-x-6 gap-y-1 text-zinc-400">
         <span>📅 {fmtDate(evt.start_at)}</span>
         <span>⏰ {fmtTime(evt.start_at)}{evt.end_at ? ` – ${fmtTime(evt.end_at)}` : ""}</span>
         {locName && (
           venue ? (
-            <a href={`/locations/${venue.slug}`} class="hover:text-white underline-offset-2 hover:underline">
+            <a href={`/locations/${venue.slug}`} class="hover:text-zinc-200 underline-offset-2 hover:underline">
               📍 {locName}
             </a>
           ) : (
@@ -86,12 +77,12 @@ const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
       </div>
 
       {evt.status === "cancelled" && (
-        <div class="mt-6 bg-red-500/20 border border-red-400/50 text-red-100 rounded p-3 text-sm">
+        <div class="mt-6 bg-red-900/30 border border-red-800 text-red-200 rounded p-3 text-sm">
           This event has been cancelled.
         </div>
       )}
       {evt.status === "postponed" && (
-        <div class="mt-6 bg-amber-500/20 border border-amber-400/50 text-amber-100 rounded p-3 text-sm">
+        <div class="mt-6 bg-amber-900/30 border border-amber-800 text-amber-200 rounded p-3 text-sm">
           This event has been postponed.
         </div>
       )}
@@ -113,7 +104,7 @@ const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
               href={evt.results_url}
               target="_blank"
               rel="noopener"
-              class="border border-white/70 text-white px-5 py-2.5 rounded font-medium hover:bg-zinc-900/10"
+              class="border border-zinc-700 text-zinc-100 px-5 py-2.5 rounded font-medium hover:bg-zinc-800"
             >
               See results →
             </a>
@@ -121,9 +112,19 @@ const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
         </div>
       )}
     </div>
-  </header>
+  </section>
 
-  <article class="max-w-4xl mx-auto px-4 py-12 grid gap-10 md:grid-cols-3">
+  {(evt.hero_image_key ?? evt.fallback_hero_key) && (
+    <div class="max-w-5xl mx-auto px-4 pt-12">
+      <img
+        src={`/media/${evt.hero_image_key ?? evt.fallback_hero_key}`}
+        alt=""
+        class="w-full aspect-[21/9] object-cover rounded-lg border border-zinc-800"
+      />
+    </div>
+  )}
+
+  <article class="max-w-5xl mx-auto px-4 py-12 grid gap-10 md:grid-cols-3">
     <div class="md:col-span-2">
       <div class="prose max-w-none" set:html={descHtml} />
 

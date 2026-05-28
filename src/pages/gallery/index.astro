@@ -49,8 +49,8 @@ const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
 
 <PublicLayout title="Photo gallery" description="Photos from CSCC events.">
   <section class="border-b border-zinc-800 bg-zinc-900">
-    <div class="max-w-6xl mx-auto px-4 py-10">
-      <p class="text-xs uppercase tracking-wider text-brand-700 font-semibold mb-2">Gallery</p>
+    <div class="max-w-5xl mx-auto px-4 py-12">
+      <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3">Gallery</div>
       <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">
         {filteredEventTitle && eventSlug ? (
           <a href={`/events/${eventSlug}`} class="hover:underline decoration-brand-500 underline-offset-4">

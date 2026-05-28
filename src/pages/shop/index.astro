@@ -16,7 +16,8 @@ const items = (await loadMerchItems(Astro, { availableOnly: true })).map((item) 
 
 <PublicLayout title="Shop" description="CSCC swag and merchandise.">
   <section class="border-b border-zinc-800 bg-zinc-900">
-    <div class="max-w-5xl mx-auto px-4 py-10">
+    <div class="max-w-5xl mx-auto px-4 py-12">
+      <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3">Merch</div>
       <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">Shop</h1>
       <p class="text-zinc-400 max-w-2xl">
         CSCC swag is available at any Chuckanut Event, but is limited to colors, styles and sizes
@@ -26,7 +27,7 @@ const items = (await loadMerchItems(Astro, { availableOnly: true })).map((item) 
     </div>
   </section>
 
-  <section class="max-w-5xl mx-auto px-4 py-10">
+  <section class="max-w-5xl mx-auto px-4 py-12">
     {items.length === 0 && (
       <p class="text-zinc-400">Nothing available right now — check back next season.</p>
     )}

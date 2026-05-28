@@ -17,23 +17,23 @@ const bioHtml = p.bio_md ? renderMarkdown(p.bio_md) : null;
 
 <PublicLayout title={p.name}>
   <div class="max-w-3xl mx-auto px-4 py-12">
-    <a href="/photographers" class="text-sm text-brand-700 hover:underline">← All photographers</a>
-    <h1 class="font-display text-4xl font-bold mt-4 mb-2">{p.name}</h1>
+    <a href="/photographers" class="text-sm text-zinc-400 hover:text-zinc-200">← All photographers</a>
+    <h1 class="font-display text-3xl sm:text-4xl font-bold mt-4 mb-3">{p.name}</h1>
 
     <div class="flex gap-4 text-sm mb-6">
       {p.portfolio_url && (
-        <a href={p.portfolio_url} target="_blank" rel="noopener" class="text-brand-700 hover:underline">
+        <a href={p.portfolio_url} target="_blank" rel="noopener" class="text-brand-500 hover:underline">
           Portfolio →
         </a>
       )}
       {p.instagram_url && (
-        <a href={p.instagram_url} target="_blank" rel="noopener" class="text-brand-700 hover:underline">
+        <a href={p.instagram_url} target="_blank" rel="noopener" class="text-brand-500 hover:underline">
           Instagram →
         </a>
       )}
     </div>
 
-    {bioHtml && <div class="prose prose-slate mb-8" set:html={bioHtml} />}
+    {bioHtml && <div class="prose mb-8" set:html={bioHtml} />}
 
     <h2 class="font-display text-2xl font-semibold mb-3">Events shot</h2>
     {events.length === 0 ? (
@@ -41,8 +41,8 @@ const bioHtml = p.bio_md ? renderMarkdown(p.bio_md) : null;
     ) : (
       <ul class="space-y-2 text-sm">
         {events.map((e) => (
-          <li class="flex items-baseline justify-between gap-4 py-2 border-b border-slate-100">
-            <a href={`/events/${e.slug}`} class="text-brand-700 hover:underline">{e.title}</a>
+          <li class="flex items-baseline justify-between gap-4 py-2 border-b border-zinc-800">
+            <a href={`/events/${e.slug}`} class="text-brand-500 hover:underline">{e.title}</a>
             <span class="text-zinc-400">{fmtDate(e.start_at)}</span>
           </li>
         ))}

@@ -47,23 +47,21 @@ const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
 ---
 
 <PublicLayout title={`Photos: ${evt.title}`}>
-  <section class="border-b border-zinc-800 bg-zinc-900">
-    <div class="max-w-6xl mx-auto px-4 py-10">
-      <a href="/gallery" class="text-sm text-brand-700 hover:underline">← All galleries</a>
-      <h1 class="font-display text-4xl font-bold mt-4 mb-2">{evt.title}</h1>
-      <p class="text-zinc-400">{fmtDate(evt.start_at)} · {totalPhotos} photo{totalPhotos === 1 ? "" : "s"}</p>
+  <section class="max-w-6xl mx-auto px-4 pt-12 pb-6">
+    <a href="/gallery" class="text-sm text-zinc-400 hover:text-zinc-200">← All galleries</a>
+    <h1 class="font-display text-3xl sm:text-4xl font-bold mt-4 mb-3">{evt.title}</h1>
+    <p class="text-zinc-400">{fmtDate(evt.start_at)} · {totalPhotos} photo{totalPhotos === 1 ? "" : "s"}</p>
       {credit && (
         <p class="text-sm text-zinc-400 mt-2">
           Photos by{" "}
           {credit.map((c) => (
             <>
               {c.sep}
-              <a href={`/photographers/${c.slug}`} class="text-brand-700 hover:underline">{c.label}</a>
+              <a href={`/photographers/${c.slug}`} class="text-brand-500 hover:underline">{c.label}</a>
             </>
           ))}
         </p>
       )}
-    </div>
   </section>
 
   <section class="max-w-6xl mx-auto px-4 py-8">

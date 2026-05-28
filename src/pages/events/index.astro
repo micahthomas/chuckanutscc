@@ -62,17 +62,17 @@ const pageTitle = season ? `${season.year} Season` : "Events";
 <PublicLayout title={pageTitle} description="Chuckanut Sports Car Club autocross calendar.">
   <section class="border-b border-zinc-800 bg-zinc-900">
     <div class="max-w-5xl mx-auto px-4 py-12">
-      <div class="flex items-baseline gap-3 flex-wrap mb-2">
-        <p class="text-xs uppercase tracking-wider text-brand-700 font-semibold">
+      <div class="flex items-baseline gap-3 flex-wrap mb-3">
+        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500">
           {season ? `${season.year} Season` : "Events"}
-        </p>
+        </div>
         {season && isCurrentSeason && (
-          <span class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+          <span class="text-xs text-emerald-300 bg-emerald-900/30 border border-emerald-800 rounded-full px-2 py-0.5">
             Current
           </span>
         )}
         {season && !isCurrentSeason && currentSeason && (
-          <a href="/events" class="text-xs text-brand-700 hover:underline">
+          <a href="/events" class="text-xs text-brand-500 hover:underline">
             ← Back to current ({currentSeason.year})
           </a>
         )}

@@ -7,17 +7,22 @@ const contactEmail = settings.contact_email;
 ---
 
 <PublicLayout title="Contact" description="Get in touch with the Chuckanut Sports Car Club.">
-  <div class="max-w-2xl mx-auto px-4 py-12">
-    <h1 class="font-display text-4xl font-bold mb-2">Contact us</h1>
-    <p class="text-zinc-400 mb-8">
-      Questions about the club, membership, or events? Drop us a note.
-      {contactEmail && (
-        <> Or email us directly at{" "}
-          <a href={`mailto:${contactEmail}`} class="text-brand-700 hover:underline">{contactEmail}</a>.
-        </>
-      )}
-    </p>
+  <section class="border-b border-zinc-800 bg-zinc-900">
+    <div class="max-w-5xl mx-auto px-4 py-12">
+      <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3">Get in touch</div>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">Contact us</h1>
+      <p class="text-zinc-400 max-w-2xl">
+        Questions about the club, membership, or events? Drop us a note.
+        {contactEmail && (
+          <> Or email us directly at{" "}
+            <a href={`mailto:${contactEmail}`} class="text-brand-500 hover:underline">{contactEmail}</a>.
+          </>
+        )}
+      </p>
+    </div>
+  </section>
 
+  <div class="max-w-2xl mx-auto px-4 py-12">
     <form method="post" action="/api/contact" class="space-y-4 border border-zinc-800 rounded-lg p-6 bg-zinc-900">
       <label class="block">
         <span class="text-sm font-medium text-zinc-300">Your name</span>

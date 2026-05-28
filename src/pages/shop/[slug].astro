@@ -22,10 +22,11 @@ const descHtml = renderMarkdown(item.description_md);
 ---
 
 <PublicLayout title={item.title}>
-  <div class="max-w-5xl mx-auto px-4 py-10">
-    <a href="/shop" class="text-sm text-brand-700 hover:underline">← All items</a>
+  <div class="max-w-5xl mx-auto px-4 py-12">
+    <a href="/shop" class="text-sm text-zinc-400 hover:text-zinc-200">← All items</a>
+    <h1 class="font-display text-3xl sm:text-4xl font-bold mt-4 mb-8">{item.title}</h1>
 
-    <div class="grid gap-8 md:grid-cols-2 mt-4">
+    <div class="grid gap-8 md:grid-cols-2">
       <div>
         {images.length > 0 ? (
           <div class="space-y-3">
@@ -59,7 +60,6 @@ const descHtml = renderMarkdown(item.description_md);
       </div>
 
       <div>
-        <h1 class="font-display text-3xl font-bold mb-3">{item.title}</h1>
         <div class="prose prose-sm text-zinc-300 mb-5" set:html={descHtml} />
         {item.notes && (
           <p class="text-xs text-zinc-400 italic mb-5">{item.notes}</p>
