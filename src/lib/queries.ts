@@ -442,7 +442,10 @@ export async function loadRecentPhotos(
        JOIN events e ON e.id = ph.event_id
        JOIN photographers p ON p.id = ph.photographer_id
        WHERE ph.status = 'live' ${where}
-       ORDER BY COALESCE(ph.exif_taken_at, ph.uploaded_at) DESC
+       ORDER BY
+         ph.sort_order IS NULL ASC,                              -- pinned first (NOT NULL → 0)
+         ph.sort_order ASC,                                       -- in the photographer's order
+         COALESCE(ph.exif_taken_at, ph.uploaded_at) DESC         -- everything else by recency
        LIMIT ? OFFSET ?`,
     )
     .bind(...binds)
