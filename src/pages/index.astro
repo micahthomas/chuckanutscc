@@ -26,6 +26,8 @@ const heroCtaUrl = home?.hero_cta_url ?? "/events";
       <img
         src={`/media/${heroImageKey}`}
         alt=""
+        fetchpriority="high"
+        decoding="async"
         class="absolute inset-0 -z-10 h-full w-full object-cover"
       />
     )}
@@ -41,7 +43,7 @@ const heroCtaUrl = home?.hero_cta_url ?? "/events";
       </p>
       <p class="text-lg sm:text-xl text-zinc-300 max-w-2xl mx-auto">{heroSubtitle}</p>
       <div class="mt-10 flex justify-center gap-3 flex-wrap">
-        <a href={heroCtaUrl} class="bg-brand-500 text-white px-6 py-3 rounded font-medium hover:bg-brand-700 transition-colors">
+        <a href={heroCtaUrl} class="bg-brand-700 text-white px-6 py-3 rounded font-medium hover:bg-brand-900 transition-colors">
           {heroCtaText}
         </a>
         <a href="/membership" class="border border-zinc-600 text-zinc-100 px-6 py-3 rounded font-medium hover:bg-zinc-900 transition-colors">

@@ -3,13 +3,16 @@
 
 @theme {
   /* Orange accent (Tailwind orange scale). Used everywhere `brand-*` is
-     referenced — buttons, links, hero accents. */
+     referenced — buttons, links, hero accents.
+     brand-700 is pinned at #c2410c (orange-700) so `bg-brand-700 text-white`
+     buttons clear WCAG AA at 4.92:1. brand-500 stays bright (orange-500) for
+     accent text on dark surfaces where contrast is already high. */
   --color-brand-50:  #fff7ed;
   --color-brand-100: #ffedd5;
   --color-brand-300: #fdba74;
   --color-brand-500: #f97316;
-  --color-brand-700: #ea580c;
-  --color-brand-900: #c2410c;
+  --color-brand-700: #c2410c;
+  --color-brand-900: #9a3412;
 
   /* Dark surfaces for the public site. Admin uses its own slate-900 sidebar
      and keeps a light content area — see AdminLayout.astro. */

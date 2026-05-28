@@ -47,20 +47,23 @@ async function attachFallbackHeroes<T extends EventRow>(
   const needsFallback = events.filter((e) => !e.hero_image_key);
   if (needsFallback.length === 0) return events;
 
+  // Cards render the fallback at ~400px wide, so pull the thumbnail variant
+  // (~400px @ q78 WebP) instead of the full display image (1600px @ q82) —
+  // the display variant ballooned card payloads to >1MB each on the homepage.
   const { results } = await db(ctx)
     .prepare(
-      `SELECT r2_key_display FROM photos
+      `SELECT r2_key_thumb FROM photos
        WHERE status = 'live'
        ORDER BY random()
        LIMIT ?`,
     )
     .bind(needsFallback.length)
-    .all<{ r2_key_display: string }>();
+    .all<{ r2_key_thumb: string }>();
 
   let i = 0;
   return events.map((e) => {
     if (e.hero_image_key) return e;
-    const fb = results[i++]?.r2_key_display ?? null;
+    const fb = results[i++]?.r2_key_thumb ?? null;
     return { ...e, fallback_hero_key: fb };
   });
 }
