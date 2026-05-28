@@ -87,7 +87,7 @@ export default function PhotoMosaic({
   };
 
   if (photos.length === 0) {
-    return <p className="text-slate-500">No photos yet.</p>;
+    return <p className="text-zinc-400">No photos yet.</p>;
   }
 
   const visiblePhotos = previewLimit ? photos.slice(0, previewLimit) : photos;
@@ -103,7 +103,7 @@ export default function PhotoMosaic({
               key={ph.id}
               type="button"
               onClick={() => setOpenIndex(i)}
-              className="mb-2 block w-full break-inside-avoid overflow-hidden rounded bg-slate-100 group"
+              className="mb-2 block w-full break-inside-avoid overflow-hidden rounded bg-zinc-800 group"
               style={{ aspectRatio: ratio }}
               aria-label={`Open photo by ${ph.photographer}`}
             >
@@ -124,7 +124,7 @@ export default function PhotoMosaic({
             type="button"
             onClick={loadMore}
             disabled={loading}
-            className="px-5 py-2 rounded border border-slate-300 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-2 rounded border border-zinc-700 text-sm font-medium hover:bg-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Loading…" : `Load more (${photos.length} of ${totalKnown})`}
           </button>
@@ -132,7 +132,7 @@ export default function PhotoMosaic({
       )}
 
       {!previewLimit && !hasMore && totalKnown > 0 && (
-        <p className="mt-6 text-center text-sm text-slate-500">
+        <p className="mt-6 text-center text-sm text-zinc-400">
           Showing all {totalKnown} photo{totalKnown === 1 ? "" : "s"}.
         </p>
       )}
@@ -250,13 +250,13 @@ function Lightbox({ photos, total, index, onClose, onNav, hideEventLabel, loadin
             href={`/media/${current.full}`}
             target="_blank"
             rel="noopener"
-            className="px-2 py-1 text-xs rounded border border-white/30 hover:bg-white/10"
+            className="px-2 py-1 text-xs rounded border border-white/30 hover:bg-zinc-900/10"
           >
             Open original
           </a>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xl leading-none"
+            className="w-8 h-8 rounded-full bg-zinc-900/10 hover:bg-zinc-900/20 flex items-center justify-center text-xl leading-none"
             aria-label="Close lightbox"
           >
             ×
@@ -271,14 +271,14 @@ function Lightbox({ photos, total, index, onClose, onNav, hideEventLabel, loadin
           <>
             <button
               onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-2xl"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-zinc-900/10 hover:bg-zinc-900/25 flex items-center justify-center text-2xl"
               aria-label="Previous photo"
             >
               ‹
             </button>
             <button
               onClick={next}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-2xl"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-zinc-900/10 hover:bg-zinc-900/25 flex items-center justify-center text-2xl"
               aria-label="Next photo"
             >
               ›

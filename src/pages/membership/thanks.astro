@@ -8,12 +8,12 @@ const isMock = sessionId?.startsWith("mock_") ?? false;
 <PublicLayout title="Membership confirmed">
   <div class="max-w-2xl mx-auto px-4 py-16 text-center">
     <h1 class="font-display text-4xl font-bold mb-4">You're in 🏁</h1>
-    <p class="text-slate-600 mb-6">
+    <p class="text-zinc-400 mb-6">
       Your membership is active through December 31. We'll email a receipt and
       add you to event reminders.
     </p>
     {isMock && (
-      <p class="text-xs text-slate-400 mb-6">
+      <p class="text-xs text-zinc-500 mb-6">
         (Offline mock checkout — no real payment was processed.)
       </p>
     )}
@@ -21,7 +21,7 @@ const isMock = sessionId?.startsWith("mock_") ?? false;
       <a href="/events" class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
         See upcoming events
       </a>
-      <a href="/" class="border border-slate-300 px-5 py-2 rounded hover:bg-slate-50">
+      <a href="/" class="border border-zinc-700 px-5 py-2 rounded hover:bg-zinc-900">
         Home
       </a>
     </div>

@@ -20,7 +20,7 @@ const day = dayFmt.format(ms);
 const weekday = weekdayFmt.format(ms);
 
 const statusBadge = event.status === "completed"
-  ? { label: "Completed", tone: "bg-slate-100 text-slate-600" }
+  ? { label: "Completed", tone: "bg-zinc-800 text-zinc-400" }
   : event.status === "cancelled"
     ? { label: "Cancelled", tone: "bg-red-100 text-red-700" }
     : event.status === "postponed"
@@ -34,7 +34,7 @@ const heroKey = event.hero_image_key ?? event.fallback_hero_key;
 
 <a
   href={`/events/${event.slug}`}
-  class="group block bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-brand-500 hover:shadow-lg transition-all"
+  class="group block bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden hover:border-brand-500 hover:shadow-lg transition-all"
 >
   <div class="relative aspect-[16/9] bg-gradient-to-br from-brand-700 to-brand-900 overflow-hidden">
     {heroKey && (
@@ -48,9 +48,9 @@ const heroKey = event.hero_image_key ?? event.fallback_hero_key;
     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
 
     {/* Date block badge */}
-    <div class="absolute top-4 left-4 bg-white rounded-lg shadow-md overflow-hidden text-center w-16">
+    <div class="absolute top-4 left-4 bg-zinc-900 rounded-lg shadow-md overflow-hidden text-center w-16">
       <div class="bg-brand-700 text-white text-[10px] font-semibold tracking-wider py-1">{month}</div>
-      <div class="text-slate-900 font-display text-2xl font-bold leading-none py-1.5">{day}</div>
+      <div class="text-zinc-100 font-display text-2xl font-bold leading-none py-1.5">{day}</div>
     </div>
 
     {statusBadge && (
@@ -66,14 +66,14 @@ const heroKey = event.hero_image_key ?? event.fallback_hero_key;
   </div>
 
   <div class="p-4 text-sm">
-    <div class="flex items-center justify-between text-slate-600 mb-2">
+    <div class="flex items-center justify-between text-zinc-400 mb-2">
       <span>{weekday} · {fmtTime(event.start_at)}</span>
       {event.fee_member_cents != null && (
-        <span class="text-slate-500">From {fmtMoney(event.fee_member_cents)}</span>
+        <span class="text-zinc-400">From {fmtMoney(event.fee_member_cents)}</span>
       )}
     </div>
     {event.location_name && (
-      <div class="text-slate-500 text-xs flex items-center gap-1">
+      <div class="text-zinc-400 text-xs flex items-center gap-1">
         <span>📍</span>
         <span class="truncate">{event.location_name}</span>
       </div>

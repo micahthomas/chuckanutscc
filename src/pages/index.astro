@@ -21,24 +21,30 @@ const heroCtaUrl = home?.hero_cta_url ?? "/events";
 ---
 
 <PublicLayout description={heroSubtitle}>
-  <section class="relative isolate overflow-hidden bg-brand-900 text-white">
+  <section class="relative isolate overflow-hidden bg-zinc-950 text-white">
     {heroImageKey && (
       <img
         src={`/media/${heroImageKey}`}
         alt=""
-        class="absolute inset-0 -z-10 h-full w-full object-cover opacity-40"
+        class="absolute inset-0 -z-10 h-full w-full object-cover"
       />
     )}
-    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-brand-900/50 via-brand-900/70 to-brand-900"></div>
+    {/* Two-layer wash so the photo is visible up top, copy stays legible mid-band, gradient fades into the page bg. */}
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-zinc-950/40 via-zinc-950/65 to-zinc-950"></div>
 
     <div class="max-w-6xl mx-auto px-4 py-28 sm:py-36 text-center">
-      <h1 class="font-display text-4xl sm:text-6xl font-bold mb-4 drop-shadow-md">{heroTitle}</h1>
-      <p class="text-lg sm:text-xl text-brand-100 max-w-2xl mx-auto">{heroSubtitle}</p>
+      <h1 class="font-display text-5xl sm:text-7xl font-bold mb-2 drop-shadow-md">
+        {heroTitle}
+      </h1>
+      <p class="font-display text-3xl sm:text-5xl font-bold text-brand-500 mb-6 drop-shadow-md">
+        since 1956.
+      </p>
+      <p class="text-lg sm:text-xl text-zinc-300 max-w-2xl mx-auto">{heroSubtitle}</p>
       <div class="mt-10 flex justify-center gap-3 flex-wrap">
-        <a href={heroCtaUrl} class="bg-white text-brand-900 px-6 py-3 rounded font-medium hover:bg-brand-50 transition-colors">
+        <a href={heroCtaUrl} class="bg-brand-500 text-white px-6 py-3 rounded font-medium hover:bg-brand-700 transition-colors">
           {heroCtaText}
         </a>
-        <a href="/membership" class="border border-white/70 text-white px-6 py-3 rounded font-medium hover:bg-white/10 transition-colors">
+        <a href="/membership" class="border border-zinc-600 text-zinc-100 px-6 py-3 rounded font-medium hover:bg-zinc-900 transition-colors">
           Become a member
         </a>
       </div>
@@ -52,7 +58,7 @@ const heroCtaUrl = home?.hero_cta_url ?? "/events";
     </div>
 
     {upcoming.length === 0 && (
-      <p class="text-slate-500">No events on the calendar right now. Check back soon.</p>
+      <p class="text-zinc-400">No events on the calendar right now. Check back soon.</p>
     )}
 
     {upcoming.length > 0 && (

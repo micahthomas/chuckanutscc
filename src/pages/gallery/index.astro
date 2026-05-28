@@ -48,34 +48,34 @@ const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
 ---
 
 <PublicLayout title="Photo gallery" description="Photos from CSCC events.">
-  <section class="border-b border-slate-200 bg-slate-50">
+  <section class="border-b border-zinc-800 bg-zinc-900">
     <div class="max-w-6xl mx-auto px-4 py-10">
       <p class="text-xs uppercase tracking-wider text-brand-700 font-semibold mb-2">Gallery</p>
       <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">
         {filteredEventTitle && eventSlug ? (
           <a href={`/events/${eventSlug}`} class="hover:underline decoration-brand-500 underline-offset-4">
             {filteredEventTitle}
-            {filteredEventYear && <span class="text-slate-400 font-normal"> ({filteredEventYear})</span>}
+            {filteredEventYear && <span class="text-zinc-500 font-normal"> ({filteredEventYear})</span>}
           </a>
         ) : (
           "Photos from recent events"
         )}
       </h1>
-      <p class="text-slate-600 max-w-2xl">
+      <p class="text-zinc-400 max-w-2xl">
         Click any photo to open the lightbox. Use ← / → or the thumbnail strip to browse.
       </p>
     </div>
   </section>
 
   <section class="max-w-6xl mx-auto px-4 py-6">
-    <h2 class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Filter by event</h2>
+    <h2 class="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3">Filter by event</h2>
     <div class="flex flex-wrap gap-2">
       <a
         href="/gallery"
         class={`px-3 py-1.5 rounded-full border text-sm transition-colors ${
           !eventSlug
             ? "bg-brand-700 text-white border-brand-700"
-            : "border-slate-300 text-slate-700 hover:bg-slate-100"
+            : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
         }`}
       >
         All photos
@@ -86,16 +86,16 @@ const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
           class={`px-3 py-1.5 rounded-full border text-sm transition-colors ${
             eventSlug === e.slug
               ? "bg-brand-700 text-white border-brand-700"
-              : "border-slate-300 text-slate-700 hover:bg-slate-100"
+              : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
           }`}
         >
           {e.title}
           {e.season_year && (
-            <span class={`ml-1 ${eventSlug === e.slug ? "text-white/80" : "text-slate-500"}`}>
+            <span class={`ml-1 ${eventSlug === e.slug ? "text-white/80" : "text-zinc-400"}`}>
               ({e.season_year})
             </span>
           )}
-          <span class={`ml-1 text-xs ${eventSlug === e.slug ? "text-white/70" : "text-slate-400"}`}>
+          <span class={`ml-1 text-xs ${eventSlug === e.slug ? "text-white/70" : "text-zinc-500"}`}>
             {e.photo_count}
           </span>
         </a>
@@ -113,7 +113,7 @@ const mosaicPhotos: MosaicPhoto[] = photos.map((p) => ({
     />
 
     {mosaicPhotos.length === 0 && events.length === 0 && (
-      <p class="text-slate-500 mt-8">No event photos uploaded yet. Check back after the next event.</p>
+      <p class="text-zinc-400 mt-8">No event photos uploaded yet. Check back after the next event.</p>
     )}
   </section>
 </PublicLayout>

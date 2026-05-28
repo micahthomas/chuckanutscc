@@ -33,10 +33,10 @@ const hasCoords = loc.latitude !== null && loc.longitude !== null;
     <a href="/locations" class="text-sm text-brand-700 hover:underline">← All locations</a>
     <h1 class="font-display text-4xl font-bold mt-4 mb-2">{loc.name}</h1>
     {loc.address && (
-      <p class="text-slate-600 mb-1">📍 {loc.address}</p>
+      <p class="text-zinc-400 mb-1">📍 {loc.address}</p>
     )}
     {hasCoords && (
-      <p class="text-xs text-slate-500 font-mono mb-6">
+      <p class="text-xs text-zinc-400 font-mono mb-6">
         {loc.latitude!.toFixed(4)}, {loc.longitude!.toFixed(4)}
       </p>
     )}
@@ -53,7 +53,7 @@ const hasCoords = loc.latitude !== null && loc.longitude !== null;
         <a
           href={googleMapsPinUrl(loc.latitude!, loc.longitude!)}
           target="_blank" rel="noopener"
-          class="border border-slate-300 px-5 py-2 rounded font-medium hover:bg-slate-50"
+          class="border border-zinc-700 px-5 py-2 rounded font-medium hover:bg-zinc-900"
         >
           Open in Google Maps
         </a>
@@ -67,7 +67,7 @@ const hasCoords = loc.latitude !== null && loc.longitude !== null;
     {hasCoords && (
       <div class="mb-10">
         <h2 class="font-display text-xl font-semibold mb-3">Map</h2>
-        <div class="aspect-[16/10] bg-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+        <div class="aspect-[16/10] bg-zinc-800 border border-zinc-800 rounded-lg overflow-hidden">
           <SatelliteMap
             client:visible
             lat={loc.latitude!}
@@ -85,7 +85,7 @@ const hasCoords = loc.latitude !== null && loc.longitude !== null;
         <img
           src={`/media/${loc.map_image_key}`}
           alt={`${loc.name} venue map`}
-          class="w-full rounded-lg border border-slate-200"
+          class="w-full rounded-lg border border-zinc-800"
         />
       </div>
     )}
@@ -98,13 +98,13 @@ const hasCoords = loc.latitude !== null && loc.longitude !== null;
     )}
 
     {upcomingHere.length > 0 && (
-      <div class="mt-10 border-t border-slate-200 pt-6">
+      <div class="mt-10 border-t border-zinc-800 pt-6">
         <h2 class="font-display text-xl font-semibold mb-3">Upcoming events here</h2>
         <ul class="space-y-2 text-sm">
           {upcomingHere.map((e) => (
             <li class="flex items-baseline justify-between gap-4 py-2 border-b border-slate-100">
               <a href={`/events/${e.slug}`} class="text-brand-700 hover:underline">{e.title}</a>
-              <span class="text-slate-500">{fmtDate(e.start_at)}</span>
+              <span class="text-zinc-400">{fmtDate(e.start_at)}</span>
             </li>
           ))}
         </ul>

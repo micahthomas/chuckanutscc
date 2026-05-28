@@ -34,7 +34,7 @@ const flash = Astro.url.searchParams.get("flash");
     {description && <meta name="description" content={description} />}
   </head>
   <body class="min-h-screen flex flex-col">
-    <header class="border-b border-slate-200">
+    <header class="border-b border-zinc-800">
       <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <a href="/" class="flex items-center gap-3 font-display text-lg sm:text-xl font-semibold text-brand-700 min-w-0">
           {logoKey && <img src={`/media/${logoKey}`} alt="" class="w-9 h-9 shrink-0" />}
@@ -58,7 +58,7 @@ const flash = Astro.url.searchParams.get("flash");
         <button
           id="mobile-nav-toggle"
           type="button"
-          class="md:hidden -m-2 p-2 text-slate-700 hover:bg-slate-100 rounded shrink-0"
+          class="md:hidden -m-2 p-2 text-zinc-300 hover:bg-zinc-800 rounded shrink-0"
           aria-label="Open menu"
           aria-controls="mobile-nav"
           aria-expanded="false"
@@ -71,17 +71,17 @@ const flash = Astro.url.searchParams.get("flash");
       {/* Mobile nav (under md). Hidden by default; toggle script below. */}
       <nav
         id="mobile-nav"
-        class="md:hidden hidden flex-col px-2 pb-3 text-base border-t border-slate-200"
+        class="md:hidden hidden flex-col px-2 pb-3 text-base border-t border-zinc-800"
       >
-        <a href="/events"     class="block px-3 py-3 rounded hover:bg-slate-100">Events</a>
-        <a href="/locations"  class="block px-3 py-3 rounded hover:bg-slate-100">Locations</a>
-        <a href="/membership" class="block px-3 py-3 rounded hover:bg-slate-100">Membership</a>
-        <a href="/shop"       class="block px-3 py-3 rounded hover:bg-slate-100">Shop</a>
-        <a href="/gallery"    class="block px-3 py-3 rounded hover:bg-slate-100">Gallery</a>
+        <a href="/events"     class="block px-3 py-3 rounded hover:bg-zinc-800">Events</a>
+        <a href="/locations"  class="block px-3 py-3 rounded hover:bg-zinc-800">Locations</a>
+        <a href="/membership" class="block px-3 py-3 rounded hover:bg-zinc-800">Membership</a>
+        <a href="/shop"       class="block px-3 py-3 rounded hover:bg-zinc-800">Shop</a>
+        <a href="/gallery"    class="block px-3 py-3 rounded hover:bg-zinc-800">Gallery</a>
         {navPages.map((p) => (
-          <a href={`/${p.slug}`} class="block px-3 py-3 rounded hover:bg-slate-100">{p.title}</a>
+          <a href={`/${p.slug}`} class="block px-3 py-3 rounded hover:bg-zinc-800">{p.title}</a>
         ))}
-        <a href="/contact"    class="block px-3 py-3 rounded hover:bg-slate-100">Contact</a>
+        <a href="/contact"    class="block px-3 py-3 rounded hover:bg-zinc-800">Contact</a>
       </nav>
     </header>
 
@@ -114,15 +114,15 @@ const flash = Astro.url.searchParams.get("flash");
       <slot />
     </main>
 
-    <footer class="border-t border-slate-200 mt-16">
-      <div class="max-w-6xl mx-auto px-4 py-8 text-sm text-slate-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+    <footer class="border-t border-zinc-800 mt-16">
+      <div class="max-w-6xl mx-auto px-4 py-8 text-sm text-zinc-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
           <span>&copy; {new Date().getFullYear()} Chuckanut Sports Car Club &middot; Bellingham, WA</span>
           {(instagramUrl || facebookUrl) && (
             <span class="flex items-center gap-1 -my-2">
               {instagramUrl && (
                 <a href={instagramUrl} target="_blank" rel="noopener" aria-label="Instagram"
-                  class="inline-flex items-center justify-center w-11 h-11 text-slate-400 hover:text-brand-700 hover:bg-slate-100 rounded transition-colors">
+                  class="inline-flex items-center justify-center w-11 h-11 text-zinc-500 hover:text-brand-700 hover:bg-zinc-800 rounded transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
@@ -132,7 +132,7 @@ const flash = Astro.url.searchParams.get("flash");
               )}
               {facebookUrl && (
                 <a href={facebookUrl} target="_blank" rel="noopener" aria-label="Facebook"
-                  class="inline-flex items-center justify-center w-11 h-11 text-slate-400 hover:text-brand-700 hover:bg-slate-100 rounded transition-colors">
+                  class="inline-flex items-center justify-center w-11 h-11 text-zinc-500 hover:text-brand-700 hover:bg-zinc-800 rounded transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
                   </svg>
@@ -147,7 +147,7 @@ const flash = Astro.url.searchParams.get("flash");
             name="email"
             required
             placeholder="Newsletter email"
-            class="flex-1 sm:flex-initial border border-slate-300 rounded px-3 py-2 text-sm min-h-[40px]"
+            class="flex-1 sm:flex-initial border border-zinc-700 rounded px-3 py-2 text-sm min-h-[40px]"
           />
           <button type="submit"
             class="bg-brand-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-900 min-h-[40px] shrink-0">

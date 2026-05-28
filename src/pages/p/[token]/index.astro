@@ -43,13 +43,13 @@ const { results: events } = await db(Astro)
 
 <PhotographerLayout title="Your events" photographerName={photographer.name}>
   <h1 class="text-2xl font-semibold mb-2">Welcome, {photographer.name}</h1>
-  <p class="text-sm text-slate-600 mb-8">
+  <p class="text-sm text-zinc-400 mb-8">
     These are the events you've been assigned to. Pick one to upload or manage
     photos.
   </p>
 
   {events.length === 0 ? (
-    <p class="text-sm text-slate-500">
+    <p class="text-sm text-zinc-400">
       No events assigned yet. A club officer will assign you to events from the
       admin area.
     </p>
@@ -59,9 +59,9 @@ const { results: events } = await db(Astro)
         <li>
           <a
             href={`/p/${token}/${evt.id}`}
-            class="block bg-white border border-slate-200 rounded overflow-hidden hover:border-brand-700 hover:shadow-sm transition"
+            class="block bg-zinc-900 border border-zinc-800 rounded overflow-hidden hover:border-brand-700 hover:shadow-sm transition"
           >
-            <div class="aspect-video bg-slate-100 overflow-hidden">
+            <div class="aspect-video bg-zinc-800 overflow-hidden">
               {evt.cover_thumb ? (
                 <img
                   src={`/media/${evt.cover_thumb}`}
@@ -70,17 +70,17 @@ const { results: events } = await db(Astro)
                   loading="lazy"
                 />
               ) : (
-                <div class="w-full h-full flex items-center justify-center text-slate-400 text-xs">
+                <div class="w-full h-full flex items-center justify-center text-zinc-500 text-xs">
                   No photos yet
                 </div>
               )}
             </div>
             <div class="p-3">
               <div class="font-semibold text-sm">{evt.title}</div>
-              <div class="text-xs text-slate-500 mt-1">
+              <div class="text-xs text-zinc-400 mt-1">
                 {fmtDate(evt.start_at)}{evt.location_name ? ` · ${evt.location_name}` : ""}
               </div>
-              <div class="text-xs text-slate-400 mt-2">
+              <div class="text-xs text-zinc-500 mt-2">
                 {evt.photo_count} photo{evt.photo_count === 1 ? "" : "s"} uploaded
               </div>
             </div>

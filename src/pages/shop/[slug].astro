@@ -29,7 +29,7 @@ const descHtml = renderMarkdown(item.description_md);
       <div>
         {images.length > 0 ? (
           <div class="space-y-3">
-            <div class="aspect-[4/5] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+            <div class="aspect-[4/5] bg-zinc-800 rounded-lg overflow-hidden border border-zinc-800">
               <img
                 src={`/media/${images[0].r2_key}`}
                 alt={images[0].alt || item.title}
@@ -39,7 +39,7 @@ const descHtml = renderMarkdown(item.description_md);
             {images.length > 1 && (
               <div class="grid grid-cols-4 gap-2">
                 {images.slice(1).map((img) => (
-                  <div class="aspect-square bg-slate-100 rounded overflow-hidden border border-slate-200">
+                  <div class="aspect-square bg-zinc-800 rounded overflow-hidden border border-zinc-800">
                     <img
                       src={`/media/${img.r2_key}`}
                       alt={img.alt}
@@ -60,38 +60,38 @@ const descHtml = renderMarkdown(item.description_md);
 
       <div>
         <h1 class="font-display text-3xl font-bold mb-3">{item.title}</h1>
-        <div class="prose prose-sm text-slate-700 mb-5" set:html={descHtml} />
+        <div class="prose prose-sm text-zinc-300 mb-5" set:html={descHtml} />
         {item.notes && (
-          <p class="text-xs text-slate-500 italic mb-5">{item.notes}</p>
+          <p class="text-xs text-zinc-400 italic mb-5">{item.notes}</p>
         )}
 
-        <form method="post" action="/api/merch/request" class="border border-slate-200 rounded-lg p-5 bg-slate-50">
+        <form method="post" action="/api/merch/request" class="border border-zinc-800 rounded-lg p-5 bg-zinc-900">
           <h2 class="font-semibold mb-4">Request this item</h2>
           <input type="hidden" name="item_id" value={item.id} />
           <input type="hidden" name="item_slug" value={item.slug} />
 
           <div class="grid grid-cols-1 gap-3 mb-4">
             <label class="block">
-              <span class="text-sm font-medium text-slate-700">Your name</span>
+              <span class="text-sm font-medium text-zinc-300">Your name</span>
               <input type="text" name="name" required
-                class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                class="mt-1 w-full border border-zinc-700 rounded px-3 py-2 text-sm" />
             </label>
             <label class="block">
-              <span class="text-sm font-medium text-slate-700">Email</span>
+              <span class="text-sm font-medium text-zinc-300">Email</span>
               <input type="email" name="email" required
-                class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                class="mt-1 w-full border border-zinc-700 rounded px-3 py-2 text-sm" />
             </label>
             <label class="block">
-              <span class="text-sm font-medium text-slate-700">Quantity</span>
+              <span class="text-sm font-medium text-zinc-300">Quantity</span>
               <input type="number" name="quantity" min="1" value="1" required
-                class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                class="mt-1 w-full border border-zinc-700 rounded px-3 py-2 text-sm" />
             </label>
 
             {options.map((opt) => (
               <label class="block">
-                <span class="text-sm font-medium text-slate-700">{opt.name}</span>
+                <span class="text-sm font-medium text-zinc-300">{opt.name}</span>
                 <select name={`opt_${opt.name}`} required
-                  class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white">
+                  class="mt-1 w-full border border-zinc-700 rounded px-3 py-2 text-sm bg-zinc-900">
                   <option value="">— choose —</option>
                   {opt.choices.map((c) => <option value={c}>{c}</option>)}
                 </select>
@@ -99,9 +99,9 @@ const descHtml = renderMarkdown(item.description_md);
             ))}
 
             <label class="block">
-              <span class="text-sm font-medium text-slate-700">Notes (optional)</span>
+              <span class="text-sm font-medium text-zinc-300">Notes (optional)</span>
               <textarea name="notes" rows="2"
-                class="mt-1 w-full border border-slate-300 rounded px-3 py-2 text-sm"></textarea>
+                class="mt-1 w-full border border-zinc-700 rounded px-3 py-2 text-sm"></textarea>
             </label>
           </div>
 
@@ -109,7 +109,7 @@ const descHtml = renderMarkdown(item.description_md);
             class="bg-brand-700 text-white px-5 py-2 rounded font-medium hover:bg-brand-900">
             Submit request
           </button>
-          <p class="text-xs text-slate-500 mt-3">
+          <p class="text-xs text-zinc-400 mt-3">
             No payment required now. We'll be in touch when the next order is placed.
           </p>
         </form>

@@ -1,0 +1,107 @@
+---
+import PublicLayout from "~/layouts/PublicLayout.astro";
+import { loadPageBySlug, loadRecentPhotos } from "~/lib/queries";
+import { renderMarkdown } from "~/lib/markdown";
+
+// Still backed by the CMS row at /admin/pages/about-autocross — the dedicated
+// page just gives it a richer hero + section styling than the generic
+// [slug].astro template can provide.
+const page = await loadPageBySlug(Astro, "autocross");
+if (!page) {
+  return new Response("Not found", { status: 404 });
+}
+
+// One recent photo for the hero overlay. Falls back gracefully if the gallery
+// is empty (new install, fresh seed before any uploads).
+const recentPhotos = await loadRecentPhotos(Astro, { limit: 1 });
+const heroPhoto = recentPhotos[0] ?? null;
+
+// Drop the leading "# What is autocross?" + intro paragraph from the
+// markdown — the hero already covers them. Keep everything from the first
+// ## sub-heading onward.
+const trimmed = page.body_md.replace(/^[\s\S]*?(?=^## )/m, "");
+const html = renderMarkdown(trimmed);
+---
+
+<PublicLayout
+  title={page.seo_title ?? page.title}
+  description={page.seo_description ?? undefined}
+>
+  <section class="bg-zinc-950 border-b border-zinc-900">
+    <div class="max-w-6xl mx-auto px-4 py-16 sm:py-24 grid gap-10 lg:grid-cols-2 lg:gap-16 items-center">
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-4">
+          About Autocross
+        </div>
+        <h1 class="font-display text-4xl sm:text-5xl font-bold leading-tight mb-6">
+          Autocross for
+          <span class="text-brand-500">Everyone</span>.
+        </h1>
+        <p class="text-zinc-300 leading-relaxed mb-6">
+          Cones in a parking lot, one car at a time. It rewards driver
+          confidence and precision — not horsepower. Daily drivers welcome,
+          first-timers get a mentor for their first runs, and speeds stay
+          around 20–40 MPH with very little risk to car or driver.
+        </p>
+
+        <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-3 mb-8">
+          {[
+            "Any car welcome — yes, even your daily driver",
+            "Loaner helmets for newcomers",
+            "Experienced drivers ride along to help",
+            "Affordable entry fees (typically $25–40)",
+            "10–15 timed runs per event",
+            "Friendly competition with classing for fairness",
+          ].map((item) => (
+            <li class="flex items-start gap-2 text-sm text-zinc-300">
+              <span class="text-brand-500 mt-0.5 shrink-0" aria-hidden="true">✓</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div class="flex flex-wrap gap-3">
+          <a
+            href="/events"
+            class="bg-brand-500 text-white px-5 py-2.5 rounded font-medium hover:bg-brand-700 transition-colors"
+          >
+            Come to your first event
+          </a>
+          <a
+            href="/membership"
+            class="border border-zinc-700 text-zinc-100 px-5 py-2.5 rounded font-medium hover:bg-zinc-900 transition-colors"
+          >
+            Become a member
+          </a>
+        </div>
+      </div>
+
+      <div class="relative">
+        {heroPhoto ? (
+          <img
+            src={`/media/${heroPhoto.r2_key_display}`}
+            alt=""
+            class="w-full aspect-[4/3] object-cover rounded-lg border border-zinc-800"
+            loading="lazy"
+          />
+        ) : (
+          <div class="w-full aspect-[4/3] rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600 text-sm">
+            Photo coming soon
+          </div>
+        )}
+        {/* Negative-space overlay card — mirrors the "Years Running" pattern
+            from the v0 reference. */}
+        <div class="absolute right-4 bottom-4 sm:right-6 sm:bottom-6 bg-zinc-950 border border-zinc-800 rounded p-4 shadow-xl max-w-[15rem]">
+          <div class="font-display text-3xl font-bold text-brand-500">70+</div>
+          <div class="text-xs text-zinc-400 mt-1 leading-snug">
+            Years racing in the Pacific Northwest — CSCC's been at it since 1956.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <article class="max-w-3xl mx-auto px-4 py-12">
+    <div class="prose max-w-none" set:html={html} />
+  </article>
+</PublicLayout>

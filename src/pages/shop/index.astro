@@ -15,10 +15,10 @@ const items = (await loadMerchItems(Astro, { availableOnly: true })).map((item) 
 ---
 
 <PublicLayout title="Shop" description="CSCC swag and merchandise.">
-  <section class="border-b border-slate-200 bg-slate-50">
+  <section class="border-b border-zinc-800 bg-zinc-900">
     <div class="max-w-5xl mx-auto px-4 py-10">
       <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">Shop</h1>
-      <p class="text-slate-600 max-w-2xl">
+      <p class="text-zinc-400 max-w-2xl">
         CSCC swag is available at any Chuckanut Event, but is limited to colors, styles and sizes
         on hand. To request a product to be included in our next order, click an item below.
         Swag is purchased near the beginning and end of each season.
@@ -28,7 +28,7 @@ const items = (await loadMerchItems(Astro, { availableOnly: true })).map((item) 
 
   <section class="max-w-5xl mx-auto px-4 py-10">
     {items.length === 0 && (
-      <p class="text-slate-500">Nothing available right now — check back next season.</p>
+      <p class="text-zinc-400">Nothing available right now — check back next season.</p>
     )}
 
     {items.length > 0 && (
@@ -37,7 +37,7 @@ const items = (await loadMerchItems(Astro, { availableOnly: true })).map((item) 
           <li>
             <a
               href={`/shop/${item.slug}`}
-              class="group block bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-brand-500 hover:shadow-lg transition-all h-full flex flex-col"
+              class="group block bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-brand-500 hover:shadow-lg transition-all h-full flex flex-col"
             >
               <div class="aspect-[4/5] bg-gradient-to-br from-brand-700 to-brand-900 overflow-hidden">
                 {item.primaryImage ? (
@@ -55,9 +55,9 @@ const items = (await loadMerchItems(Astro, { availableOnly: true })).map((item) 
               </div>
               <div class="p-5 flex-1 flex flex-col">
                 <h2 class="font-display text-lg font-semibold mb-1">{item.title}</h2>
-                <p class="text-sm text-slate-600 mb-3 line-clamp-2">{item.preview}</p>
+                <p class="text-sm text-zinc-400 mb-3 line-clamp-2">{item.preview}</p>
                 {item.notes && (
-                  <p class="text-xs text-slate-500 italic mb-3">{item.notes}</p>
+                  <p class="text-xs text-zinc-400 italic mb-3">{item.notes}</p>
                 )}
                 <span class="mt-auto text-sm text-brand-700 group-hover:underline font-medium">
                   Request →

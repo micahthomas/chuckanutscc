@@ -30,11 +30,11 @@ const photos = await loadEventPhotos(Astro, event.id, {
   backToToken={token}
 >
   <h1 class="text-2xl font-semibold">{event.title}</h1>
-  <p class="text-sm text-slate-500 mt-1 mb-8">{fmtDate(event.start_at)}</p>
+  <p class="text-sm text-zinc-400 mt-1 mb-8">{fmtDate(event.start_at)}</p>
 
   <section class="mb-12">
     <h2 class="text-lg font-semibold mb-3">Upload photos</h2>
-    <p class="text-sm text-slate-600 mb-4">
+    <p class="text-sm text-zinc-400 mb-4">
       Drop files, pick multiple, or upload a ZIP. Each photo is resized and
       uploaded in your browser — feel free to close the tab and come back
       later; what's already uploaded will stay.
@@ -49,7 +49,7 @@ const photos = await loadEventPhotos(Astro, event.id, {
   <section>
     <h2 class="text-lg font-semibold mb-3">
       Your photos for this event
-      <span class="text-sm font-normal text-slate-500">({photos.length})</span>
+      <span class="text-sm font-normal text-zinc-400">({photos.length})</span>
     </h2>
     <PhotographerPhotoManager
       client:load
